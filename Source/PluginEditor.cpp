@@ -88,7 +88,8 @@ void AudioPluginAudioProcessorEditor::resized()
     // Bottom area reserved for the oscilloscope
     auto scopeArea = bounds.removeFromBottom(160);
     scopeBounds = scopeArea.reduced(3);
-
+    int x = 25;
+    int p = 150;
     // Everything else (slider + label)
 
 
