@@ -75,7 +75,7 @@ void AudioPluginAudioProcessorEditor::resized()
 {
     auto bounds = getLocalBounds();
     auto main = bounds;
-    int y = 180;
+    int y = 200;
     // Frequency (left)
     frequencyLabel.setBounds(main.getCentreX() - 150, main.getCentreY() - y, 100, 20);
     frequencySlider.setBounds(main.getCentreX() - 200, main.getCentreY() - y + 20, 200, 200);
