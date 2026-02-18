@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 # Change to your project name
-project(JuceFirstSound VERSION 0.0.1)
+project(TestPlugin VERSION 0.0.1)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_XCODE_GENERATE_SCHEME ON)
@@ -34,11 +34,7 @@ set(SourceFiles
         Source/PluginProcessor.h
         Source/SineWave.cpp
         Source/SineWave.h
-        Source/SineWaveChannel.cpp
-        Source/SineWaveChannel.h
 
-    Source/Square.cpp
-    Source/Square.h
 )
 
 # Change these to your own preferences
@@ -54,7 +50,7 @@ juce_add_plugin(${PROJECT_NAME}
         PLUGIN_MANUFACTURER_CODE Tap1
         PLUGIN_CODE Reg0
         FORMATS VST3 AU Standalone
-        PRODUCT_NAME "JuceFirstSound"
+        PRODUCT_NAME "TestPlugin"
 )
 
 juce_add_binary_data(BinaryData
@@ -95,4 +91,3 @@ target_link_libraries(${PROJECT_NAME}
         juce::juce_recommended_warning_flags
         BinaryData
 )
-

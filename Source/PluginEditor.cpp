@@ -1,6 +1,6 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
-#include <cstring> // memcpy/memmove
+#include <cstring> 
 
 //==============================================================================
 AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudioProcessor& p)
@@ -75,7 +75,7 @@ void AudioPluginAudioProcessorEditor::resized()
 {
     auto bounds = getLocalBounds();
     auto main = bounds;
-    double y = 180;
+    int y = 180;
     // Frequency (left)
     frequencyLabel.setBounds(main.getCentreX() - 150, main.getCentreY() - y, 100, 20);
     frequencySlider.setBounds(main.getCentreX() - 200, main.getCentreY() - y + 20, 200, 200);
@@ -90,8 +90,6 @@ void AudioPluginAudioProcessorEditor::resized()
     scopeBounds = scopeArea.reduced(3);
 
     // Everything else (slider + label)
-    
-    
 
 
 }
