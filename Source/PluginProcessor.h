@@ -1,6 +1,7 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <vector>
 #include "SineWave.h"
 
 //==============================================================================
@@ -19,7 +20,8 @@ public:
 
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
     using AudioProcessor::processBlock;
-
+    int popScopeSamples(float* dest, int maxSamples) noexcept;
+    static constexpr const char* kVolumeParamID = "volume";
     //==============================================================================
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override;
@@ -48,11 +50,14 @@ public:
     ParameterState parameters;
 private:
     ParameterState::ParameterLayout createParameterLayout();
-
+    
     void parameterChanged(const juce::String& parameterID, float newValue) override;
 
     SineWave sineWave;
-
+    static constexpr int scopeFifoSize = 8192;
+    juce::AbstractFifo scopeFifo{ scopeFifoSize };
+    std::vector<float> scopeFifoBuffer;
+    void pushScopeSamples(const float* samples, int numSamples) noexcept;
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)
 };

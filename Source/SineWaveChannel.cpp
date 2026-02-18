@@ -1,6 +1,3 @@
-//
-// Created by Joshua Hodge on 6/29/25.
-//
 
 #include "SineWaveChannel.h"
 

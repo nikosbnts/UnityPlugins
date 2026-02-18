@@ -3,8 +3,10 @@
 #include "PluginProcessor.h"
 #include "BinaryData.h"
 
+
 //==============================================================================
-class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor
+class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor,
+    private juce::Timer
 {
 public:
     explicit AudioPluginAudioProcessorEditor (AudioPluginAudioProcessor&);
@@ -13,13 +15,26 @@ public:
     //==============================================================================
     void paint (juce::Graphics&) override;
     void resized() override;
-
+    
 private:
-    juce::Image tapLogo;
+
+
+    void timerCallback() override;
+
+    // ===== Oscilloscope =====
+    juce::Rectangle<int> scopeBounds;
+    juce::Path scopePath;
+    static constexpr int scopeNumSamples = 512;
+    std::vector<float> scopeDisplayBuffer;
+    std::vector<float> scopePullBuffer;
+
     juce::Slider frequencySlider;
     juce::Label frequencyLabel { "Freq Label", "Frequency" };
+    juce::Slider volumeSlider;
+    juce::Label volumeLabel{ "Vol Label", "Volume" };
     AudioPluginAudioProcessor& processorRef;
     juce::AudioProcessorValueTreeState::SliderAttachment frequencySliderAttachment;
+    juce::AudioProcessorValueTreeState::SliderAttachment volumeSliderAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessorEditor)
 };
