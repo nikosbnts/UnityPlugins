@@ -5,8 +5,8 @@
 
 
 //==============================================================================
-class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor,
-    private juce::Timer
+class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor
+  
 {
 public:
     explicit AudioPluginAudioProcessorEditor (AudioPluginAudioProcessor&);
@@ -17,29 +17,13 @@ public:
     void resized() override;
     
 private:
-
-
-    void timerCallback() override;
-
-    // ===== Oscilloscope =====
-    juce::Rectangle<int> scopeBounds;
-    juce::Path scopePath;
-    static constexpr int scopeNumSamples = 512;
-    std::vector<float> scopeDisplayBuffer;
-    std::vector<float> scopePullBuffer;
-
-    juce::TextButton loadWavButton{ "Load WAV" };
-    juce::ToggleButton playToggle{ "Play" };
-    std::unique_ptr<juce::FileChooser> fileChooser;
     juce::Slider volumeLSlider, volumeRSlider;
-    juce::Label  volumeLLabel{ "VolL", "Volume L" };
-    juce::Label  volumeRLabel{ "VolR", "Volume R" };
+    juce::Label  volumeLLabel, volumeRLabel;
 
     AudioPluginAudioProcessor& processorRef;
 
     juce::AudioProcessorValueTreeState::SliderAttachment volumeLAttachment;
     juce::AudioProcessorValueTreeState::SliderAttachment volumeRAttachment;
-
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessorEditor)
 };

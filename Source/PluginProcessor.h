@@ -2,7 +2,6 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <vector>
-#include <juce_audio_formats/juce_audio_formats.h>
 #include <atomic>
 #include <memory>
 
@@ -13,9 +12,7 @@ public:
     //==============================================================================
     AudioPluginAudioProcessor();
     ~AudioPluginAudioProcessor() override;
-    bool loadWavFile(const juce::File& file);
-    void setPlaying(bool shouldPlay) noexcept { playing.store(shouldPlay); }
-    bool isPlaying() const noexcept { return playing.load(); }
+
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
@@ -24,8 +21,8 @@ public:
 
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
     using AudioProcessor::processBlock;
-    int popScopeSamples(float* dest, int maxSamples) noexcept;
-    static constexpr const char* kVolumeParamID = "volume";
+
+
     //==============================================================================
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override;
@@ -57,21 +54,10 @@ private:
     
     void parameterChanged(const juce::String& parameterID, float newValue) override;
 
-    juce::AudioFormatManager formatManager;
-
-    juce::SpinLock sampleLock;
-    std::shared_ptr<juce::AudioBuffer<float>> sampleBuffer;
-    double sampleBufferRate = 0.0;
-
-    double samplePosition = 0.0;          // in "sampleBuffer samples" (can be fractional)
-    std::atomic<bool> playing{ true };
     std::atomic<float> currentVolumeL{ 0.5f };
     std::atomic<float> currentVolumeR{ 0.5f };
-    static constexpr int scopeFifoSize = 8192;
-    juce::AbstractFifo scopeFifo{ scopeFifoSize };
-    std::vector<float> scopeFifoBuffer;
-    void pushScopeSamples(const float* samples, int numSamples) noexcept;
  
+
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)
 };
