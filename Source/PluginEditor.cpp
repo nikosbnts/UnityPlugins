@@ -7,30 +7,27 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
     : AudioProcessorEditor(&p),
     processorRef(p),
 
-    volumeSliderAttachment(processorRef.parameters, "volume", volumeSlider)
+    volumeLAttachment(processorRef.parameters, "volumeL", volumeLSlider),
+    volumeRAttachment(processorRef.parameters, "volumeR", volumeRSlider)
+
 {
 
     juce::ignoreUnused (processorRef);
 
-    juce::MemoryInputStream imageStream(BinaryData::tap_logo_png, BinaryData::tap_logo_pngSize, false);
-   
-    volumeSlider.setSliderStyle(juce::Slider::SliderStyle::LinearVertical);
-    volumeSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 50, 24);
-    volumeSlider.textFromValueFunction = [](double v)
-        {
-            return juce::String(juce::roundToInt(v * 100.0)) + "%";
-        };
+    addAndMakeVisible(volumeLSlider);
+    addAndMakeVisible(volumeRSlider);
+    addAndMakeVisible(volumeLLabel);
+    addAndMakeVisible(volumeRLabel);
 
-    volumeSlider.valueFromTextFunction = [](const juce::String& text)
-        {
-            auto t = text.upToFirstOccurrenceOf("%", false, false).trim();
-            return t.getDoubleValue() / 100.0;
-        };
-    volumeSlider.updateText();
-    addAndMakeVisible(volumeSlider);
+    for (auto* s : { &volumeLSlider, &volumeRSlider })
+    {
+        s->setSliderStyle(juce::Slider::LinearVertical);
+        s->setTextBoxStyle(juce::Slider::TextBoxBelow, false, 70, 20);
+        s->setRange(0.0, 1.0, 0.0001);
+    }
 
-    volumeLabel.setJustificationType(juce::Justification::centred);
-    addAndMakeVisible(volumeLabel);
+    volumeLLabel.setJustificationType(juce::Justification::centred);
+    volumeRLabel.setJustificationType(juce::Justification::centred);
     scopeDisplayBuffer.resize((size_t)scopeNumSamples, 0.0f);
     scopePullBuffer.resize((size_t)scopeNumSamples, 0.0f);
     startTimerHz(20);
@@ -95,25 +92,33 @@ void AudioPluginAudioProcessorEditor::paint (juce::Graphics& g)
 
 void AudioPluginAudioProcessorEditor::resized()
 {
-    auto bounds = getLocalBounds();
+    auto bounds = getLocalBounds().reduced(10);
 
-    // Bottom oscilloscope
+    // Bottom oscilloscope area
     auto scopeArea = bounds.removeFromBottom(160);
     scopeBounds = scopeArea.reduced(3);
 
-    // Top controls
-    auto top = bounds.reduced(10);
-
-    auto topRow = top.removeFromTop(40);
+    // Top row: buttons
+    auto topRow = bounds.removeFromTop(40);
     loadWavButton.setBounds(topRow.removeFromLeft(140));
     topRow.removeFromLeft(10);
     playToggle.setBounds(topRow.removeFromLeft(80));
 
-    top.removeFromTop(10);
+    bounds.removeFromTop(10);
 
-    volumeLabel.setBounds(top.getCentreX() - 50, top.getY(), 100, 20);
-    volumeSlider.setBounds(top.getCentreX() - 100, top.getY() + 20, 200, 200);
+    // Middle: two volume sliders side-by-side
+    auto slidersArea = bounds.removeFromTop(240);
+
+    auto leftArea = slidersArea.removeFromLeft(slidersArea.getWidth() / 2);
+    auto rightArea = slidersArea;
+
+    volumeLLabel.setBounds(leftArea.removeFromTop(20));
+    volumeLSlider.setBounds(leftArea.reduced(20, 0));
+
+    volumeRLabel.setBounds(rightArea.removeFromTop(20));
+    volumeRSlider.setBounds(rightArea.reduced(20, 0));
 }
+
 
 
 void AudioPluginAudioProcessorEditor::timerCallback()

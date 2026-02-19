@@ -17,14 +17,17 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
 
     scopeFifoBuffer.resize(scopeFifoSize, 0.0f);
 
-    parameters.addParameterListener("volume", this);
+    parameters.addParameterListener("volumeL", this);
+    parameters.addParameterListener("volumeR", this);
+
     
 }
 
 AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
 {
 
-    parameters.removeParameterListener("volume", this);
+    parameters.removeParameterListener("volumeL", this);
+    parameters.removeParameterListener("volumeR", this);
 }
 
 //==============================================================================
@@ -99,9 +102,13 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate, int samplesPerB
 
     samplePosition = 0.0f;
 
-    if (auto* vol = parameters.getRawParameterValue("volume"))
-        currentVolume.store(vol->load());
+    if (auto* vL = parameters.getRawParameterValue("volumeL"))
+        currentVolumeL.store(vL->load());
+
+    if (auto* vR = parameters.getRawParameterValue("volumeR"))
+        currentVolumeR.store(vR->load());
 }
+
 
 void AudioPluginAudioProcessor::releaseResources()
 {
@@ -109,29 +116,21 @@ void AudioPluginAudioProcessor::releaseResources()
     // spare memory, etc.
 }
 
-bool AudioPluginAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool AudioPluginAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
-  #if JucePlugin_IsMidiEffect
-    juce::ignoreUnused (layouts);
-    return true;
-  #else
-    // This is the place where you check if the layout is supported.
-    // In this template code we only support mono or stereo.
-    // Some plugin hosts, such as certain GarageBand versions, will only
-    // load plugins that support stereo bus layouts.
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+    // Must be stereo output
+    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
 
-    // This checks if the input layout matches the output layout
-   #if ! JucePlugin_IsSynth
-    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
+#if ! JucePlugin_IsSynth
+    // If it's an effect, require stereo input too (keeps host happy)
+    if (layouts.getMainInputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
-   #endif
+#endif
 
     return true;
-  #endif
 }
+
 
 void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     juce::MidiBuffer& midiMessages)
@@ -165,7 +164,8 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     const double hostRate = getSampleRate();
     const double step = localSampleRate / hostRate;  // resample ratio (simple linear)
 
-    const float vol = currentVolume.load();
+    const float volL = currentVolumeL.load();
+    const float volR = currentVolumeR.load();
 
     for (int i = 0; i < outNumSamples; ++i)
     {
@@ -189,7 +189,8 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
             const float s1 = src[idx1];
             const float s = s0 + (s1 - s0) * frac;
 
-            buffer.setSample(ch, i, s * vol);
+            const float v = (ch == 0 ? volL : volR); // L/R volume
+            buffer.setSample(ch, i, s * v);
         }
 
         samplePosition += step;
@@ -200,6 +201,7 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     if (buffer.getNumChannels() > 0)
         pushScopeSamples(buffer.getReadPointer(0), buffer.getNumSamples());
 }
+
 
 
 //==============================================================================
@@ -243,17 +245,25 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
   
     juce::NormalisableRange<float> volumeRange{ 0.0f, 1.0f, 0.001f, 1.0f };
 
-    parameterList.push_back(std::make_unique<juce::AudioParameterFloat>("volume",
-        "Volume",
-        volumeRange,
-        0.02f));
+    parameterList.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "volumeL", "Volume L",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.0001f),
+        0.5f));
+
+    parameterList.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "volumeR", "Volume R",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.0001f),
+        0.5f));
+
     return { parameterList.begin(), parameterList.end() };
 }
 
 void AudioPluginAudioProcessor::parameterChanged(const juce::String& parameterID, float newValue)
 {
-    if (parameterID == "volume")
-        currentVolume.store(newValue);
+    if (parameterID == "volumeL")
+        currentVolumeL.store(newValue);
+    else if (parameterID == "volumeR")
+        currentVolumeR.store(newValue);
 }
 
 

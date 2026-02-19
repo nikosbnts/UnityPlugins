@@ -65,11 +65,13 @@ private:
 
     double samplePosition = 0.0;          // in "sampleBuffer samples" (can be fractional)
     std::atomic<bool> playing{ true };
-    std::atomic<float> currentVolume{ 0.02f };
+    std::atomic<float> currentVolumeL{ 0.5f };
+    std::atomic<float> currentVolumeR{ 0.5f };
     static constexpr int scopeFifoSize = 8192;
     juce::AbstractFifo scopeFifo{ scopeFifoSize };
     std::vector<float> scopeFifoBuffer;
     void pushScopeSamples(const float* samples, int numSamples) noexcept;
+ 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)
 };

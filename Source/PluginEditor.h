@@ -31,11 +31,15 @@ private:
     juce::TextButton loadWavButton{ "Load WAV" };
     juce::ToggleButton playToggle{ "Play" };
     std::unique_ptr<juce::FileChooser> fileChooser;
-    juce::Slider volumeSlider;
-    juce::Label volumeLabel{ "Vol Label", "Volume" };
+    juce::Slider volumeLSlider, volumeRSlider;
+    juce::Label  volumeLLabel{ "VolL", "Volume L" };
+    juce::Label  volumeRLabel{ "VolR", "Volume R" };
+
     AudioPluginAudioProcessor& processorRef;
-    
-    juce::AudioProcessorValueTreeState::SliderAttachment volumeSliderAttachment;
+
+    juce::AudioProcessorValueTreeState::SliderAttachment volumeLAttachment;
+    juce::AudioProcessorValueTreeState::SliderAttachment volumeRAttachment;
+
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessorEditor)
 };
