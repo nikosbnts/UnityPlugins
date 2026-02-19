@@ -13,14 +13,17 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
                      #endif
                        ), parameters(*this, nullptr, "ParameterTree", createParameterLayout())
 {
-    parameters.addParameterListener("frequency", this);
+    formatManager.registerBasicFormats();          // <--- ADD
+
     scopeFifoBuffer.resize(scopeFifoSize, 0.0f);
+
     parameters.addParameterListener("volume", this);
+    
 }
 
 AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
 {
-    parameters.removeParameterListener("frequency", this);
+
     parameters.removeParameterListener("volume", this);
 }
 
@@ -90,15 +93,14 @@ void AudioPluginAudioProcessor::changeProgramName (int index, const juce::String
 }
 
 //==============================================================================
-void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void AudioPluginAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
-    juce::ignoreUnused (samplesPerBlock);
-    sineWave.prepare (sampleRate, getTotalNumOutputChannels());
-    if (auto* freq = parameters.getRawParameterValue("frequency"))
-        sineWave.setFrequency(freq->load());
+    juce::ignoreUnused(sampleRate, samplesPerBlock);
+
+    samplePosition = 0.0f;
 
     if (auto* vol = parameters.getRawParameterValue("volume"))
-        sineWave.setAmplitude(vol->load());
+        currentVolume.store(vol->load());
 }
 
 void AudioPluginAudioProcessor::releaseResources()
@@ -131,22 +133,74 @@ bool AudioPluginAudioProcessor::isBusesLayoutSupported (const BusesLayout& layou
   #endif
 }
 
-void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
-                                              juce::MidiBuffer& midiMessages)
+void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
+    juce::MidiBuffer& midiMessages)
 {
-    juce::ignoreUnused (midiMessages);
+    juce::ignoreUnused(midiMessages);
 
     juce::ScopedNoDenormals noDenormals;
-    auto totalNumInputChannels  = getTotalNumInputChannels();
-    auto totalNumOutputChannels = getTotalNumOutputChannels();
 
-    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
-        buffer.clear (i, 0, buffer.getNumSamples());
+    // We want to generate output, not pass input through:
+    buffer.clear();
 
-    sineWave.process(buffer);
+    // Get snapshot of the loaded buffer safely
+    std::shared_ptr<juce::AudioBuffer<float>> localSample;
+    double localSampleRate = 0.0;
+
+    {
+        const juce::SpinLock::ScopedLockType lock(sampleLock);
+        localSample = sampleBuffer;
+        localSampleRate = sampleBufferRate;
+    }
+
+    if (!playing.load() || localSample == nullptr || localSample->getNumSamples() <= 0 || localSampleRate <= 0.0)
+        return;
+
+    const int outNumSamples = buffer.getNumSamples();
+    const int outNumCh = buffer.getNumChannels();
+
+    const int srcNumSamples = localSample->getNumSamples();
+    const int srcNumCh = localSample->getNumChannels();
+
+    const double hostRate = getSampleRate();
+    const double step = localSampleRate / hostRate;  // resample ratio (simple linear)
+
+    const float vol = currentVolume.load();
+
+    for (int i = 0; i < outNumSamples; ++i)
+    {
+        int idx0 = (int)std::floor(samplePosition);
+        float frac = (float)(samplePosition - (double)idx0);
+
+        // wrap
+        if (idx0 >= srcNumSamples)
+            idx0 %= srcNumSamples;
+
+        int idx1 = idx0 + 1;
+        if (idx1 >= srcNumSamples)
+            idx1 = 0;
+
+        for (int ch = 0; ch < outNumCh; ++ch)
+        {
+            const int srcCh = juce::jmin(ch, srcNumCh - 1); // mono -> duplicate
+            const float* src = localSample->getReadPointer(srcCh);
+
+            const float s0 = src[idx0];
+            const float s1 = src[idx1];
+            const float s = s0 + (s1 - s0) * frac;
+
+            buffer.setSample(ch, i, s * vol);
+        }
+
+        samplePosition += step;
+        while (samplePosition >= (double)srcNumSamples)
+            samplePosition -= (double)srcNumSamples;
+    }
+
     if (buffer.getNumChannels() > 0)
         pushScopeSamples(buffer.getReadPointer(0), buffer.getNumSamples());
 }
+
 
 //==============================================================================
 bool AudioPluginAudioProcessor::hasEditor() const
@@ -186,12 +240,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> parameterList;
 
-    juce::NormalisableRange<float> frequencyRange { 20.0f, 2000.0f, 0.1f, 0.5f };
-
-    parameterList.push_back(std::make_unique<juce::AudioParameterFloat>("frequency",
-                                                                                    "Frequency",
-                                                                                    frequencyRange,
-                                                                                    500.0f));
+  
     juce::NormalisableRange<float> volumeRange{ 0.0f, 1.0f, 0.001f, 1.0f };
 
     parameterList.push_back(std::make_unique<juce::AudioParameterFloat>("volume",
@@ -203,14 +252,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
 
 void AudioPluginAudioProcessor::parameterChanged(const juce::String& parameterID, float newValue)
 {
-    if (parameterID == "frequency")
-    {
-        sineWave.setFrequency (newValue);
-    }
-    else if (parameterID == "volume")
-    {
-        sineWave.setAmplitude (newValue);
-    }
+    if (parameterID == "volume")
+        currentVolume.store(newValue);
 }
 
 
@@ -247,4 +290,37 @@ int AudioPluginAudioProcessor::popScopeSamples(float* dest, int maxSamples) noex
 
     scopeFifo.finishedRead(size1 + size2);
     return size1 + size2;
+}
+
+bool AudioPluginAudioProcessor::loadWavFile(const juce::File& file)
+{
+    std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(file));
+
+    if (reader == nullptr)
+        return false;
+
+    const int numCh = (int)reader->numChannels;
+    const int numSamples = (int)reader->lengthInSamples;
+
+    if (numCh <= 0 || numSamples <= 0)
+        return false;
+
+    auto newBuffer = std::make_shared<juce::AudioBuffer<float>>(numCh, numSamples);
+    newBuffer->clear();
+
+    reader->read(newBuffer.get(),
+        0,
+        numSamples,
+        0,
+        true,
+        true);
+
+    {
+        const juce::SpinLock::ScopedLockType lock(sampleLock);
+        sampleBuffer = std::move(newBuffer);
+        sampleBufferRate = reader->sampleRate;
+        samplePosition = 0.0;
+    }
+
+    return true;
 }

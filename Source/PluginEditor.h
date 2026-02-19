@@ -28,12 +28,13 @@ private:
     std::vector<float> scopeDisplayBuffer;
     std::vector<float> scopePullBuffer;
 
-    juce::Slider frequencySlider;
-    juce::Label frequencyLabel { "Freq Label", "Frequency" };
+    juce::TextButton loadWavButton{ "Load WAV" };
+    juce::ToggleButton playToggle{ "Play" };
+    std::unique_ptr<juce::FileChooser> fileChooser;
     juce::Slider volumeSlider;
     juce::Label volumeLabel{ "Vol Label", "Volume" };
     AudioPluginAudioProcessor& processorRef;
-    juce::AudioProcessorValueTreeState::SliderAttachment frequencySliderAttachment;
+    
     juce::AudioProcessorValueTreeState::SliderAttachment volumeSliderAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessorEditor)

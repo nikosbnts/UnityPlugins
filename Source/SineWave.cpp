@@ -1,5 +1,4 @@
 //
-// Created by Joshua Hodge on 6/24/25.
 //
 
 #include "SineWave.h"

@@ -2,7 +2,9 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <vector>
-#include "SineWave.h"
+#include <juce_audio_formats/juce_audio_formats.h>
+#include <atomic>
+#include <memory>
 
 //==============================================================================
 class AudioPluginAudioProcessor final : public juce::AudioProcessor, public juce::AudioProcessorValueTreeState::Listener
@@ -11,7 +13,9 @@ public:
     //==============================================================================
     AudioPluginAudioProcessor();
     ~AudioPluginAudioProcessor() override;
-
+    bool loadWavFile(const juce::File& file);
+    void setPlaying(bool shouldPlay) noexcept { playing.store(shouldPlay); }
+    bool isPlaying() const noexcept { return playing.load(); }
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
@@ -53,7 +57,15 @@ private:
     
     void parameterChanged(const juce::String& parameterID, float newValue) override;
 
-    SineWave sineWave;
+    juce::AudioFormatManager formatManager;
+
+    juce::SpinLock sampleLock;
+    std::shared_ptr<juce::AudioBuffer<float>> sampleBuffer;
+    double sampleBufferRate = 0.0;
+
+    double samplePosition = 0.0;          // in "sampleBuffer samples" (can be fractional)
+    std::atomic<bool> playing{ true };
+    std::atomic<float> currentVolume{ 0.02f };
     static constexpr int scopeFifoSize = 8192;
     juce::AbstractFifo scopeFifo{ scopeFifoSize };
     std::vector<float> scopeFifoBuffer;

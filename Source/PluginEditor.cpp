@@ -6,7 +6,7 @@
 AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudioProcessor& p)
     : AudioProcessorEditor(&p),
     processorRef(p),
-    frequencySliderAttachment(processorRef.parameters, "frequency", frequencySlider),
+
     volumeSliderAttachment(processorRef.parameters, "volume", volumeSlider)
 {
 
@@ -14,13 +14,6 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
 
     juce::MemoryInputStream imageStream(BinaryData::tap_logo_png, BinaryData::tap_logo_pngSize, false);
    
-
-    frequencySlider.setSliderStyle(juce::Slider::SliderStyle::LinearVertical);
-    frequencySlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 50, 24);
-    addAndMakeVisible (frequencySlider);
-
-    frequencyLabel.setJustificationType(juce::Justification::centred);
-    addAndMakeVisible (frequencyLabel);
     volumeSlider.setSliderStyle(juce::Slider::SliderStyle::LinearVertical);
     volumeSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 50, 24);
     volumeSlider.textFromValueFunction = [](double v)
@@ -42,6 +35,35 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
     scopePullBuffer.resize((size_t)scopeNumSamples, 0.0f);
     startTimerHz(20);
     setSize (500, 500);
+    addAndMakeVisible(loadWavButton);
+    addAndMakeVisible(playToggle);
+
+    playToggle.setToggleState(true, juce::dontSendNotification);
+
+    playToggle.onClick = [this]
+        {
+            processorRef.setPlaying(playToggle.getToggleState());
+        };
+
+    loadWavButton.onClick = [this]
+        {
+            fileChooser = std::make_unique<juce::FileChooser>(
+                "Select a WAV file...",
+                juce::File{},
+                "*.wav"
+            );
+
+            auto flags = juce::FileBrowserComponent::openMode
+                | juce::FileBrowserComponent::canSelectFiles;
+
+            fileChooser->launchAsync(flags, [this](const juce::FileChooser& chooser)
+                {
+                    auto file = chooser.getResult();
+                    if (file.existsAsFile())
+                        processorRef.loadWavFile(file);
+                });
+        };
+
 }
 
 AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
@@ -74,26 +96,25 @@ void AudioPluginAudioProcessorEditor::paint (juce::Graphics& g)
 void AudioPluginAudioProcessorEditor::resized()
 {
     auto bounds = getLocalBounds();
-    auto main = bounds;
-    int y = 200;
-    // Frequency (left)
-    frequencyLabel.setBounds(main.getCentreX() - 150, main.getCentreY() - y, 100, 20);
-    frequencySlider.setBounds(main.getCentreX() - 200, main.getCentreY() - y + 20, 200, 200);
 
-    // Volume (right)
-    volumeLabel.setBounds (main.getCentreX() + 50, main.getCentreY() - y, 100, 20);
-    volumeSlider.setBounds(main.getCentreX() + 0, main.getCentreY() - y + 20, 200, 200);
-    
-
-    // Bottom area reserved for the oscilloscope
+    // Bottom oscilloscope
     auto scopeArea = bounds.removeFromBottom(160);
     scopeBounds = scopeArea.reduced(3);
-    int x = 25;
-    int p = 150;
-    // Everything else (slider + label)
 
+    // Top controls
+    auto top = bounds.reduced(10);
 
+    auto topRow = top.removeFromTop(40);
+    loadWavButton.setBounds(topRow.removeFromLeft(140));
+    topRow.removeFromLeft(10);
+    playToggle.setBounds(topRow.removeFromLeft(80));
+
+    top.removeFromTop(10);
+
+    volumeLabel.setBounds(top.getCentreX() - 50, top.getY(), 100, 20);
+    volumeSlider.setBounds(top.getCentreX() - 100, top.getY() + 20, 200, 200);
 }
+
 
 void AudioPluginAudioProcessorEditor::timerCallback()
 {
