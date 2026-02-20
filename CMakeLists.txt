@@ -32,8 +32,6 @@ set(SourceFiles
         Source/PluginEditor.h
         Source/PluginProcessor.cpp
         Source/PluginProcessor.h
-        Source/SineWave.cpp
-        Source/SineWave.h
 
 )
 

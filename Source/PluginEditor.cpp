@@ -7,7 +7,8 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
     : AudioProcessorEditor(&p),
     processorRef(p),
     volumeLAttachment(processorRef.parameters, "volumeL", volumeLSlider),
-    volumeRAttachment(processorRef.parameters, "volumeR", volumeRSlider)
+    volumeRAttachment(processorRef.parameters, "volumeR", volumeRSlider),
+    azimuthAttachment(processorRef.parameters, "azimuth", azimuthSlider)
 {
     auto setupVolSlider = [](juce::Slider& s)
         {
@@ -25,6 +26,16 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
                     return t.getDoubleValue() / 100.0;
                 };
         };
+
+    azimuthSlider.setSliderStyle(juce::Slider::LinearHorizontal);
+    azimuthSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 90, 20);
+    azimuthSlider.setRange(-90.0, 90.0, 0.01);
+
+    azimuthLabel.setJustificationType(juce::Justification::centred);
+    azimuthLabel.setColour(juce::Label::textColourId, juce::Colours::white);
+
+    addAndMakeVisible(azimuthLabel);
+    addAndMakeVisible(azimuthSlider);
 
     setupVolSlider(volumeLSlider);
     setupVolSlider(volumeRSlider);
@@ -64,12 +75,16 @@ void AudioPluginAudioProcessorEditor::paint(juce::Graphics& g)
 
 void AudioPluginAudioProcessorEditor::resized()
 {
-    auto bounds = getLocalBounds();
-    auto main = bounds.reduced(10);
+    auto area = getLocalBounds().reduced(10);
 
-    // Two sliders side-by-side
-    auto leftArea = main.removeFromLeft(main.getWidth() / 2);
-    auto rightArea = main;
+    auto top = area.removeFromTop(80);
+    azimuthLabel.setBounds(top.removeFromTop(20));
+    azimuthSlider.setBounds(top.reduced(10, 0));
+
+    area.removeFromTop(10);
+
+    auto leftArea = area.removeFromLeft(area.getWidth() / 2);
+    auto rightArea = area;
 
     volumeLLabel.setBounds(leftArea.removeFromTop(20));
     volumeLSlider.setBounds(leftArea.reduced(20, 0));
@@ -77,5 +92,3 @@ void AudioPluginAudioProcessorEditor::resized()
     volumeRLabel.setBounds(rightArea.removeFromTop(20));
     volumeRSlider.setBounds(rightArea.reduced(20, 0));
 }
-
-

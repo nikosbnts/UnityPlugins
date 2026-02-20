@@ -4,6 +4,7 @@
 #include <vector>
 #include <atomic>
 #include <memory>
+#include <cmath>
 
 //==============================================================================
 class AudioPluginAudioProcessor final : public juce::AudioProcessor, public juce::AudioProcessorValueTreeState::Listener
@@ -56,6 +57,15 @@ private:
 
     std::atomic<float> currentVolumeL{ 0.5f };
     std::atomic<float> currentVolumeR{ 0.5f };
+    std::atomic<float> currentAzimuthDeg{ 0.0f };   // UI: -90..+90
+
+    static constexpr float speakerAzL = 330.0f;      // Left speaker azimuth
+    static constexpr float speakerAzR = 30.0f;      // Right speaker azimuth
+    static constexpr float stereoHalfWidthDeg = 30.0f; // preserve stereo width (L=-30, R=+30 around center)
+
+    static float wrap360(float deg) noexcept;
+    static void vbap2Speakers(float srcAzDeg360, float ls1AzDeg360, float ls2AzDeg360,
+        float& g1, float& g2) noexcept;
  
 
     //==============================================================================
