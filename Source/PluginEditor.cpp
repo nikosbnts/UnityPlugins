@@ -1,8 +1,5 @@
-#include "PluginProcessor.h"
 #include "PluginEditor.h"
-#include <cstring> 
 
-//==============================================================================
 AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudioProcessor& p)
     : AudioProcessorEditor(&p),
     processorRef(p),
@@ -27,6 +24,21 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
                 };
         };
 
+    setupVolSlider(volumeLSlider);
+    setupVolSlider(volumeRSlider);
+
+    addAndMakeVisible(volumeLSlider);
+    addAndMakeVisible(volumeRSlider);
+
+    volumeLLabel.setJustificationType(juce::Justification::centred);
+    volumeRLabel.setJustificationType(juce::Justification::centred);
+    volumeLLabel.setColour(juce::Label::textColourId, juce::Colours::white);
+    volumeRLabel.setColour(juce::Label::textColourId, juce::Colours::white);
+
+    addAndMakeVisible(volumeLLabel);
+    addAndMakeVisible(volumeRLabel);
+
+    // VBAP azimuth slider
     azimuthSlider.setSliderStyle(juce::Slider::LinearHorizontal);
     azimuthSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 90, 20);
     azimuthSlider.setRange(-90.0, 90.0, 0.01);
@@ -37,35 +49,9 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
     addAndMakeVisible(azimuthLabel);
     addAndMakeVisible(azimuthSlider);
 
-    setupVolSlider(volumeLSlider);
-    setupVolSlider(volumeRSlider);
-
-    addAndMakeVisible(volumeLSlider);
-    addAndMakeVisible(volumeRSlider);
-
-    // Labels: give them text + make them visible on black background
-    volumeLLabel.setText("Left", juce::dontSendNotification);
-    volumeRLabel.setText("Right", juce::dontSendNotification);
-
-    volumeLLabel.setJustificationType(juce::Justification::centred);
-    volumeRLabel.setJustificationType(juce::Justification::centred);
-
-    volumeLLabel.setColour(juce::Label::textColourId, juce::Colours::white);
-    volumeRLabel.setColour(juce::Label::textColourId, juce::Colours::white);
-
-    addAndMakeVisible(volumeLLabel);
-    addAndMakeVisible(volumeRLabel);
-
-    // THIS is what fixes the “tiny window”
-    setSize(500, 300);
+    setSize(520, 320);
 }
 
-
-AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
-{
-}
-
-//==============================================================================
 void AudioPluginAudioProcessorEditor::paint(juce::Graphics& g)
 {
     g.fillAll(juce::Colours::black);

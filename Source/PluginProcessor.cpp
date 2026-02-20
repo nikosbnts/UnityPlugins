@@ -1,134 +1,100 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
-#include <cstring> // memcpy
 
 //==============================================================================
 AudioPluginAudioProcessor::AudioPluginAudioProcessor()
-     : AudioProcessor (BusesProperties()
-                     #if ! JucePlugin_IsMidiEffect
-                      #if ! JucePlugin_IsSynth
-                       .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
-                      #endif
-                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
-                     #endif
-                       ), parameters(*this, nullptr, "ParameterTree", createParameterLayout())
+    : AudioProcessor(BusesProperties()
+#if ! JucePlugin_IsMidiEffect
+#if ! JucePlugin_IsSynth
+        .withInput("Input", juce::AudioChannelSet::stereo(), true) // default stereo
+#endif
+        .withOutput("Output", juce::AudioChannelSet::stereo(), true) // always stereo (2 speakers)
+#endif
+    ),
+    parameters(*this, nullptr, "ParameterTree", createParameterLayout())
 {
-
-    parameters.addParameterListener("azimuth", this);
     parameters.addParameterListener("volumeL", this);
     parameters.addParameterListener("volumeR", this);
-
-    
+    parameters.addParameterListener("azimuth", this);
 }
 
 AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
 {
-
     parameters.removeParameterListener("volumeL", this);
     parameters.removeParameterListener("volumeR", this);
     parameters.removeParameterListener("azimuth", this);
 }
 
 //==============================================================================
-const juce::String AudioPluginAudioProcessor::getName() const
-{
-    return JucePlugin_Name;
-}
+const juce::String AudioPluginAudioProcessor::getName() const { return JucePlugin_Name; }
 
 bool AudioPluginAudioProcessor::acceptsMidi() const
 {
-   #if JucePlugin_WantsMidiInput
+#if JucePlugin_WantsMidiInput
     return true;
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
 bool AudioPluginAudioProcessor::producesMidi() const
 {
-   #if JucePlugin_ProducesMidiOutput
+#if JucePlugin_ProducesMidiOutput
     return true;
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
 bool AudioPluginAudioProcessor::isMidiEffect() const
 {
-   #if JucePlugin_IsMidiEffect
+#if JucePlugin_IsMidiEffect
     return true;
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
-double AudioPluginAudioProcessor::getTailLengthSeconds() const
-{
-    return 0.0;
-}
+double AudioPluginAudioProcessor::getTailLengthSeconds() const { return 0.0; }
 
-int AudioPluginAudioProcessor::getNumPrograms()
-{
-    return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
-                // so this should be at least 1, even if you're not really implementing programs.
-}
-
-int AudioPluginAudioProcessor::getCurrentProgram()
-{
-    return 0;
-}
-
-void AudioPluginAudioProcessor::setCurrentProgram (int index)
-{
-    juce::ignoreUnused (index);
-}
-
-const juce::String AudioPluginAudioProcessor::getProgramName (int index)
-{
-    juce::ignoreUnused (index);
-    return {};
-}
-
-void AudioPluginAudioProcessor::changeProgramName (int index, const juce::String& newName)
-{
-    juce::ignoreUnused (index, newName);
-}
+int AudioPluginAudioProcessor::getNumPrograms() { return 1; }
+int AudioPluginAudioProcessor::getCurrentProgram() { return 0; }
+void AudioPluginAudioProcessor::setCurrentProgram(int index) { juce::ignoreUnused(index); }
+const juce::String AudioPluginAudioProcessor::getProgramName(int index) { juce::ignoreUnused(index); return {}; }
+void AudioPluginAudioProcessor::changeProgramName(int index, const juce::String& newName) { juce::ignoreUnused(index, newName); }
 
 //==============================================================================
-void AudioPluginAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
+void AudioPluginAudioProcessor::prepareToPlay(double, int)
 {
-    juce::ignoreUnused(sampleRate, samplesPerBlock);
-
-    if (auto* az = parameters.getRawParameterValue("azimuth"))
-        currentAzimuthDeg.store(az->load());
-    if (auto* vL = parameters.getRawParameterValue("volumeL"))
-        currentVolumeL.store(vL->load());
-
-    if (auto* vR = parameters.getRawParameterValue("volumeR"))
-        currentVolumeR.store(vR->load());
+    if (auto* v1 = parameters.getRawParameterValue("volumeL")) currentVolumeL.store(v1->load());
+    if (auto* v2 = parameters.getRawParameterValue("volumeR")) currentVolumeR.store(v2->load());
+    if (auto* az = parameters.getRawParameterValue("azimuth")) currentAzimuthDeg.store(az->load());
 }
 
-
-void AudioPluginAudioProcessor::releaseResources()
-{
-    // When playback stops, you can use this as an opportunity to free up any
-    // spare memory, etc.
-}
+void AudioPluginAudioProcessor::releaseResources() {}
 
 bool AudioPluginAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
-    // Must be stereo output
+    // Always stereo output (2 speakers)
     if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
 
 #if ! JucePlugin_IsSynth
-    // If it's an effect, require stereo input too (keeps host happy)
-    if (layouts.getMainInputChannelSet() != juce::AudioChannelSet::stereo())
+    // Allow mono OR stereo input
+    const auto in = layouts.getMainInputChannelSet();
+    if (in != juce::AudioChannelSet::mono() && in != juce::AudioChannelSet::stereo())
         return false;
 #endif
 
     return true;
 }
+
+// ---- VBAP helpers (match your MATLAB vbap2d convention) ----
+static float degToRad(float deg) noexcept
+{
+    return deg * juce::MathConstants<float>::pi / 180.0f;
+}
+
 float AudioPluginAudioProcessor::wrap360(float deg) noexcept
 {
     float x = std::fmod(deg, 360.0f);
@@ -136,16 +102,10 @@ float AudioPluginAudioProcessor::wrap360(float deg) noexcept
     return x;
 }
 
-static float degToRad(float deg) noexcept
-{
-    return deg * juce::MathConstants<float>::pi / 180.0f;
-}
-
 void AudioPluginAudioProcessor::vbap2Speakers(float srcAzDeg360, float ls1AzDeg360, float ls2AzDeg360,
     float& g1, float& g2) noexcept
 {
-    // MATLAB vbap2d.m convention:
-    // l = [sind(az); cosd(az)], p = [sind(src); cosd(src)]
+    // l = [sin(az); cos(az)] , p = [sin(src); cos(src)]
     const float s1 = std::sin(degToRad(ls1AzDeg360));
     const float c1 = std::cos(degToRad(ls1AzDeg360));
     const float s2 = std::sin(degToRad(ls2AzDeg360));
@@ -155,21 +115,19 @@ void AudioPluginAudioProcessor::vbap2Speakers(float srcAzDeg360, float ls1AzDeg3
     const float cp = std::cos(degToRad(srcAzDeg360));
 
     const float det = (s1 * c2 - s2 * c1);
-
     if (std::abs(det) < 1.0e-8f)
     {
-        g1 = 0.7071f; g2 = 0.7071f;
+        g1 = 0.7071f;
+        g2 = 0.7071f;
         return;
     }
 
     g1 = (c2 * sp - s2 * cp) / det;
     g2 = (-c1 * sp + s1 * cp) / det;
 
-    // clamp negatives like MATLAB
     if (g1 < 0.0f) g1 = 0.0f;
     if (g2 < 0.0f) g2 = 0.0f;
 
-    // normalize constant power
     const float norm = std::sqrt(g1 * g1 + g2 * g2);
     const float safe = (norm > 1.0e-12f) ? norm : 1.0f;
     g1 /= safe;
@@ -183,60 +141,99 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     juce::ScopedNoDenormals noDenormals;
 
     const int numSamples = buffer.getNumSamples();
-    const int numCh = buffer.getNumChannels();
-    if (numCh < 2 || numSamples == 0)
+    if (numSamples <= 0)
         return;
 
-    // User trims (per ear)
-    const float trimL = currentVolumeL.load();
-    const float trimR = currentVolumeR.load();
+    const int inCh = getTotalNumInputChannels();
+    const int outCh = getTotalNumOutputChannels();
 
-    // Front-stage only
+    // We need stereo output for 2 speakers
+    if (outCh < 2 || buffer.getNumChannels() < 2)
+        return;
+
+    float* outL = buffer.getWritePointer(0);
+    float* outR = buffer.getWritePointer(1);
+
+    // These are CHANNEL volumes (not ear trims)
+    const float vol1 = currentVolumeL.load(); // channel 1 (index 0)
+    const float vol2 = currentVolumeR.load(); // channel 2 (index 1) if stereo
+
     const float centerAz = juce::jlimit(-90.0f, 90.0f, currentAzimuthDeg.load());
 
-    // Preserve stereo: treat input L and input R as two sources around the center
-    const float srcAzL = centerAz - stereoHalfWidthDeg;
-    const float srcAzR = centerAz + stereoHalfWidthDeg;
+    // Decide mono case:
+    // - true mono bus (inCh < 2)
+    // - OR stereo bus but L and R are essentially identical (mono file duplicated to stereo)
+    bool treatAsMono = (inCh < 2);
 
-    float gLL = 0.0f, gRL = 0.0f; // gains to (LeftSpeaker, RightSpeaker) for LeftInput source
-    float gLR = 0.0f, gRR = 0.0f; // gains to (LeftSpeaker, RightSpeaker) for RightInput source
-
-    vbap2Speakers(wrap360(srcAzL), speakerAzL, speakerAzR, gLL, gRL);
-    vbap2Speakers(wrap360(srcAzR), speakerAzL, speakerAzR, gLR, gRR);
-
-    float* inOutL = buffer.getWritePointer(0);
-    float* inOutR = buffer.getWritePointer(1);
-
-    for (int i = 0; i < numSamples; ++i)
+    if (!treatAsMono)
     {
-        const float inL = inOutL[i];
-        const float inR = inOutR[i];
+        const int N = juce::jmin(numSamples, 256);
+        double diff = 0.0, sum = 0.0;
 
-        const float outL = (gLL * inL + gLR * inR) * trimL;
-        const float outR = (gRL * inL + gRR * inR) * trimR;
+        for (int i = 0; i < N; ++i)
+        {
+            const float a = outL[i];
+            const float b = outR[i];
+            diff += std::abs(a - b);
+            sum += std::abs(a) + std::abs(b);
+        }
 
-        inOutL[i] = outL;
-        inOutR[i] = outR;
+        if (sum <= 1.0e-12)
+            treatAsMono = true; // silence
+        else
+            treatAsMono = ((diff / sum) < 1.0e-6); // “almost identical”
     }
 
-    // If host gives more than 2 channels, clear the rest
-    for (int ch = 2; ch < numCh; ++ch)
+    if (treatAsMono)
+    {
+        // Mono: Volume 1 controls, Volume 2 does nothing.
+        float gML = 0.0f, gMR = 0.0f;
+        vbap2Speakers(wrap360(centerAz), speakerAzL, speakerAzR, gML, gMR);
+
+        for (int i = 0; i < numSamples; ++i)
+        {
+            const float monoIn = (inCh >= 2) ? 0.5f * (outL[i] + outR[i]) : outL[i];
+            const float x = monoIn * vol1;
+
+            outL[i] = x * gML;
+            outR[i] = x * gMR;
+        }
+    }
+    else
+    {
+        // Stereo preserve: left source at center-30, right source at center+30
+        const float srcAzL = centerAz - stereoHalfWidthDeg;
+        const float srcAzR = centerAz + stereoHalfWidthDeg;
+
+        float gLL = 0.0f, gRL = 0.0f; // gains for Left input source -> (Lspk,Rspk)
+        float gLR = 0.0f, gRR = 0.0f; // gains for Right input source -> (Lspk,Rspk)
+
+        vbap2Speakers(wrap360(srcAzL), speakerAzL, speakerAzR, gLL, gRL);
+        vbap2Speakers(wrap360(srcAzR), speakerAzL, speakerAzR, gLR, gRR);
+
+        for (int i = 0; i < numSamples; ++i)
+        {
+            // Apply volumes PER INPUT CHANNEL
+            const float inL = outL[i] * vol1;
+            const float inR = outR[i] * vol2;
+
+            outL[i] = (gLL * inL + gLR * inR);
+            outR[i] = (gRL * inL + gRR * inR);
+        }
+    }
+
+    // Clear any extra channels beyond stereo
+    for (int ch = 2; ch < buffer.getNumChannels(); ++ch)
         buffer.clear(ch, 0, numSamples);
 }
 
-
-
-
 //==============================================================================
-bool AudioPluginAudioProcessor::hasEditor() const
-{
-    return true; // (change this to false if you choose to not supply an editor)
-}
-
+bool AudioPluginAudioProcessor::hasEditor() const { return true; }
 juce::AudioProcessorEditor* AudioPluginAudioProcessor::createEditor()
 {
-    return new AudioPluginAudioProcessorEditor (*this);
+    return new AudioPluginAudioProcessorEditor(*this);
 }
+
 void AudioPluginAudioProcessor::parameterChanged(const juce::String& parameterID, float newValue)
 {
     if (parameterID == "volumeL")
@@ -246,48 +243,46 @@ void AudioPluginAudioProcessor::parameterChanged(const juce::String& parameterID
     else if (parameterID == "azimuth")
         currentAzimuthDeg.store(newValue);
 }
-//==============================================================================
-void AudioPluginAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
-{
-    // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries to make it easy to save and load complex data.
-    juce::ignoreUnused (destData);
-}
-
-void AudioPluginAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
-{
-    // You should use this method to restore your parameters from this memory block,
-    // whose contents will have been created by the getStateInformation() call.
-    juce::ignoreUnused (data, sizeInBytes);
-}
 
 //==============================================================================
-// This creates new instances of the plugin..
-juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
+void AudioPluginAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
-    return new AudioPluginAudioProcessor();
+    auto state = parameters.copyState();
+    std::unique_ptr<juce::XmlElement> xml(state.createXml());
+    copyXmlToBinary(*xml, destData);
 }
 
+void AudioPluginAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
+{
+    std::unique_ptr<juce::XmlElement> xmlState(getXmlFromBinary(data, sizeInBytes));
+    if (xmlState && xmlState->hasTagName(parameters.state.getType()))
+        parameters.replaceState(juce::ValueTree::fromXml(*xmlState));
+}
+
+//==============================================================================
 juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::createParameterLayout()
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
+    // These are channel volumes (0..1), default 0.5
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "volumeL", "Volume L",
+        "volumeL", "Volume 1",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.0001f), 0.5f));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "volumeR", "Volume R",
+        "volumeR", "Volume 2",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.0001f), 0.5f));
+
+    // VBAP control (front stage only)
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         "azimuth", "Azimuth",
-        juce::NormalisableRange<float>(-90.0f, 90.0f, 0.01f),
-        0.0f));
+        juce::NormalisableRange<float>(-90.0f, 90.0f, 0.01f), 0.0f));
 
     return { params.begin(), params.end() };
 }
 
-
-
-
+//==============================================================================
+juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
+{
+    return new AudioPluginAudioProcessor();
+}
