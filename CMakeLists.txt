@@ -7,6 +7,16 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_XCODE_GENERATE_SCHEME ON)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+# ---- Unity native audio plugin settings (Windows x64 primary) ----
+# Unity convention: native audio DSP plugin binaries should be prefixed with
+# "audioplugin" so Unity preloads them before AudioMixer assets are created.
+set(TESTPLUGIN_UNITY_OUTPUT_NAME "audiopluginTestPlugin"
+CACHE STRING "Output filename (without extension) for Unity DSP (must start with 'audioplugin').")
+
+# JUCE note: UNITY_COPY_DIR has no default; set a staging default and override at configure time.
+set(TESTPLUGIN_UNITY_COPY_DIR "${CMAKE_BINARY_DIR}/UnityPluginStaging"
+CACHE PATH "Where to copy Unity plugin artefacts when COPY_PLUGIN_AFTER_BUILD is TRUE (recommend: <UnityProject>/Assets/Plugins/x86_64).")
+
 # We're going to use CPM as our package manager to bring in JUCE
 # Check to see if we have CPM installed already.  Bring it in if we don't.
 set(CPM_DOWNLOAD_VERSION 0.34.0)
@@ -46,11 +56,17 @@ juce_add_plugin(${PROJECT_NAME}
         JUCE_VST3_CAN_REPLACE_VST2 FALSE
         COPY_PLUGIN_AFTER_BUILD TRUE
         VST3_COPY_DIR "${CMAKE_CURRENT_LIST_DIR}/VST"
+	UNITY_COPY_DIR "${TESTPLUGIN_UNITY_COPY_DIR}"
         PLUGIN_MANUFACTURER_CODE Tap1
         PLUGIN_CODE Reg0
         FORMATS VST3 AU Standalone
+	FORMATS VST3 AU Standalone Unity
         PRODUCT_NAME "TestPlugin"
 )
+
+if (TARGET ${PROJECT_NAME}_Unity)
+    set_target_properties(${PROJECT_NAME}_Unity PROPERTIES OUTPUT_NAME "${TESTPLUGIN_UNITY_OUTPUT_NAME}")
+endif()
 
 juce_add_binary_data(BinaryData
         SOURCES
