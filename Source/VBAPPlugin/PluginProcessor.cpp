@@ -63,13 +63,14 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     tempMonoInput.setSize(1, numSamples, false, false, true);
     tempMonoInput.clear();
 
+    // Build mono input from mono or stereo source
     if (buffer.getNumChannels() > 0)
         tempMonoInput.copyFrom(0, 0, buffer, 0, 0, numSamples);
 
     if (inCh > 1 && buffer.getNumChannels() > 1)
     {
         tempMonoInput.addFrom(0, 0, buffer, 1, 0, numSamples);
-        tempMonoInput.applyGain(0, 0, numSamples, 0.5f); // average L and R -> mono
+        tempMonoInput.applyGain(0, 0, numSamples, 0.5f);
     }
 
     for (int ch = 0; ch < outCh; ++ch)
@@ -80,8 +81,6 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
     int requestedSpeakers = speakerCountParam ? juce::roundToInt(speakerCountParam->load()) : 2;
     requestedSpeakers = juce::jlimit(2, kMaxSpeakers, requestedSpeakers);
-
-    const int activeOutputs = juce::jmin(requestedSpeakers, outCh, kMaxSpeakers);
 
     std::array<float, kMaxSpeakers> speakerAz{};
     std::array<float, kMaxSpeakers> gainsMono{};
@@ -99,17 +98,51 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
     const float* monoIn = tempMonoInput.getReadPointer(0);
 
-    for (int ch = 0; ch < activeOutputs; ++ch)
+    // Multichannel render if host really gives >2 outputs
+    if (outCh > 2)
     {
-        float* out = buffer.getWritePointer(ch);
-        const float g = gainsMono[ch];
+        const int activeOutputs = juce::jmin(requestedSpeakers, outCh, kMaxSpeakers);
 
-        for (int i = 0; i < numSamples; ++i)
-            out[i] = monoIn[i] * inputGain * g;
+        for (int ch = 0; ch < activeOutputs; ++ch)
+        {
+            float* out = buffer.getWritePointer(ch);
+            const float g = gainsMono[ch];
+
+            for (int i = 0; i < numSamples; ++i)
+                out[i] = monoIn[i] * inputGain * g;
+        }
+
+        for (int ch = activeOutputs; ch < outCh; ++ch)
+            buffer.clear(ch, 0, numSamples);
+
+        return;
     }
 
-    for (int ch = activeOutputs; ch < outCh; ++ch)
-        buffer.clear(ch, 0, numSamples);
+    // Stereo preview mode for Unity Editor / headphones
+    float* outL = buffer.getWritePointer(0);
+    float* outR = buffer.getWritePointer(1);
+
+    for (int spk = 0; spk < requestedSpeakers; ++spk)
+    {
+        const float g = gainsMono[spk];
+        if (g <= 0.0f)
+            continue;
+
+        const float azRad = speakerAz[spk] * juce::MathConstants<float>::pi / 180.0f;
+        const float x = std::sin(azRad); // -1 left, +1 right
+
+        const float leftW = std::sqrt(0.5f * (1.0f - x));
+        const float rightW = std::sqrt(0.5f * (1.0f + x));
+
+        const float totalL = inputGain * g * leftW;
+        const float totalR = inputGain * g * rightW;
+
+        for (int i = 0; i < numSamples; ++i)
+        {
+            outL[i] += monoIn[i] * totalL;
+            outR[i] += monoIn[i] * totalR;
+        }
+    }
 }
 
 bool AudioPluginAudioProcessor::hasEditor() const

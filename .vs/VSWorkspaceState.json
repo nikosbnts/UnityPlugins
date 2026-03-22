@@ -7,8 +7,9 @@
   },
   "ExpandedNodes": [
     "",
-    "\\Source"
+    "\\Source",
+    "\\Source\\BinauralPlugin"
   ],
-  "SelectedNode": "\\CMakeLists.txt",
+  "SelectedNode": "\\Source\\BinauralPlugin\\PluginProcessor.cpp",
   "PreviewInSolutionExplorer": false
 }

@@ -5,14 +5,8 @@
     {
       "type": "default",
       "project": "CMakeLists.txt",
-      "projectTarget": "JuceFirstSound.exe (JuceFirstSound_artefacts\\Debug\\Standalone\\JuceFirstSound.exe)",
-      "name": "JuceFirstSound.exe (JuceFirstSound_artefacts\\Debug\\Standalone\\JuceFirstSound.exe)"
-    },
-    {
-      "type": "default",
-      "project": "CMakeLists.txt",
-      "projectTarget": "JuceFirstSound.exe (JuceFirstSound_artefacts\\Debug\\Standalone\\JuceFirstSound.exe)",
-      "name": "JuceFirstSound.exe (JuceFirstSound_artefacts\\Debug\\Standalone\\JuceFirstSound.exe)"
+      "projectTarget": "Binaural.exe (BinauralPlugin_artefacts\\Debug\\Standalone\\Binaural.exe)",
+      "name": "Binaural.exe (BinauralPlugin_artefacts\\Debug\\Standalone\\Binaural.exe)"
     }
   ]
 }
