@@ -17,9 +17,7 @@ set(BINAURAL_UNITY_OUTPUT_NAME "audiopluginBinaural"
     CACHE STRING "Output filename for the Unity Binaural plugin")
 
 # Optional: where Unity copies the built plugin automatically
-# Recommended:
-#   <YourUnityProject>/Assets/Plugins/x86_64
-set(UNITY_PLUGIN_COPY_DIR "${CMAKE_BINARY_DIR}/UnityPluginStaging"
+set(UNITY_PLUGIN_COPY_DIR "C:/Users/nikos/Desktop/Diplomatiki/VST-Test/Assets/Plugins"
     CACHE PATH "Where to copy built Unity plugins when COPY_PLUGIN_AFTER_BUILD is TRUE")
 
 # =========================================================
@@ -50,6 +48,12 @@ set(COMMON_SOURCE_FILES
     Source/Common/VbapEngine2D.h
     Source/Common/HrirBank.h
     Source/Common/HrirBank.cpp
+    Source/Common/TestSession.h
+    Source/Common/AudioPlayer.h
+    Source/Common/PluginEditor.h
+    Source/Common/PluginEditor.cpp
+    Source/Common/TestSessionEditor.h
+    Source/Common/TestSEssionEditor.cpp
 )
 
 # =========================================================
@@ -62,7 +66,7 @@ function(add_juce_unity_plugin TARGET_NAME PRODUCT_NAME UNITY_OUTPUT_NAME PLUGIN
         NEEDS_MIDI_INPUT FALSE
         NEEDS_MIDI_OUTPUT FALSE
         IS_MIDI_EFFECT FALSE
-        EDITOR_WANTS_KEYBOARD_FOCUS FALSE
+        EDITOR_WANTS_KEYBOARD_FOCUS TRUE
         JUCE_VST3_CAN_REPLACE_VST2 FALSE
 
         COPY_PLUGIN_AFTER_BUILD TRUE
@@ -82,13 +86,13 @@ function(add_juce_unity_plugin TARGET_NAME PRODUCT_NAME UNITY_OUTPUT_NAME PLUGIN
     endif()
 
     if (TARGET ${TARGET_NAME}_Unity)
-    add_custom_command(TARGET ${TARGET_NAME}_Unity POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${UNITY_PLUGIN_COPY_DIR}"
-        COMMAND ${CMAKE_COMMAND} -E copy
-            "$<TARGET_FILE:${TARGET_NAME}_Unity>"
-            "${UNITY_PLUGIN_COPY_DIR}/$<TARGET_FILE_NAME:${TARGET_NAME}_Unity>"
-    )
-endif()
+        add_custom_command(TARGET ${TARGET_NAME}_Unity POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${UNITY_PLUGIN_COPY_DIR}"
+            COMMAND ${CMAKE_COMMAND} -E copy
+                "$<TARGET_FILE:${TARGET_NAME}_Unity>"
+                "${UNITY_PLUGIN_COPY_DIR}/$<TARGET_FILE_NAME:${TARGET_NAME}_Unity>"
+        )
+    endif()
 
     target_sources(${TARGET_NAME}
         PRIVATE

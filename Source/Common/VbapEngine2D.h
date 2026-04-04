@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <vector>
 #include <algorithm>
 #include <cmath>
 
@@ -64,42 +65,25 @@ namespace vbap
         b /= safe;
     }
 
-    inline void defaultLayoutAngles(int n, float* outAngles) noexcept
+    inline std::vector<float> DefaultVBAPLayoutAngles(int n) noexcept
     {
-        if (outAngles == nullptr || n < 2)
-            return;
-
         switch (n)
         {
-        case 2:
-            outAngles[0] = 330.0f; outAngles[1] = 30.0f;
-            return;
-        case 3:
-            outAngles[0] = 330.0f; outAngles[1] = 0.0f; outAngles[2] = 30.0f;
-            return;
-        case 4:
-            outAngles[0] = 330.0f; outAngles[1] = 30.0f; outAngles[2] = 250.0f; outAngles[3] = 110.0f;
-            return;
-        case 5:
-            outAngles[0] = 30.0f; outAngles[1] = 330.0f; outAngles[2] = 110.0f; outAngles[3] = 250.0f; outAngles[4] = 0.0f;
-            return;
-        case 6:
-            outAngles[0] = 30.0f; outAngles[1] = 330.0f; outAngles[2] = 0.0f; outAngles[3] = 110.0f; outAngles[4] = 250.0f; outAngles[5] = 180.0f;
-            return;
-        case 7:
-            outAngles[0] = 30.0f; outAngles[1] = 330.0f; outAngles[2] = 0.0f; outAngles[3] = 110.0f; outAngles[4] = 250.0f; outAngles[5] = 210.0f; outAngles[6] = 150.0f;
-            return;
-        case 8:
-            outAngles[0] = 30.0f; outAngles[1] = 330.0f; outAngles[2] = 0.0f; outAngles[3] = 110.0f;
-            outAngles[4] = 250.0f; outAngles[5] = 210.0f; outAngles[6] = 150.0f; outAngles[7] = 180.0f;
-            return;
-        default:
-            break;
+            case 2: return { 330.0f, 30.0f };
+            case 3: return { 330.0f, 0.0f, 30.0f };
+            case 4: return { 330.0f, 30.0f, 250.0f, 110.0f };
+            case 5: return { 30.0f, 330.0f, 110.0f, 250.0f, 0.0f };
+            case 6: return { 30.0f, 330.0f, 0.0f, 110.0f, 250.0f, 180.0f };
+            case 7: return { 30.0f, 330.0f, 0.0f, 110.0f, 250.0f, 210.0f, 150.0f };
+            case 8: return { 30.0f, 330.0f, 0.0f, 110.0f, 250.0f, 210.0f, 150.0f, 180.0f };
         }
 
-        const float step = 360.0f / static_cast<float>(n);
-        for (int i = 0; i < n; ++i)
-            outAngles[i] = wrap360(step * static_cast<float>(i));
+        std::vector<float> ang(n);
+        float step = 360.0f / n;
+        for (int i = 0; i < n; i++)
+            ang[i] = wrap360(i * step);
+
+        return ang;
     }
 
     inline void computeVBAP_N(float sourceAzDeg360,

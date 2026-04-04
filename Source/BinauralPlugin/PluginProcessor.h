@@ -5,6 +5,7 @@
 #include <vector>
 #include "../Common/VbapEngine2D.h"
 #include "../Common/HrirBank.h"
+#include "../Common/AudioPlayer.h"
 
 class AudioPluginAudioProcessor final : public juce::AudioProcessor
 {
@@ -39,6 +40,9 @@ public:
 
     using ParameterState = juce::AudioProcessorValueTreeState;
     ParameterState parameters;
+
+    /** Internal audio player – the editor uses this to load/play stimulus files. */
+    AudioFilePlayer audioPlayer;
 
 private:
     static constexpr int kMaxSpeakers = vbap::kMaxSpeakers;

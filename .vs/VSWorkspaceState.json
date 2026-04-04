@@ -8,8 +8,11 @@
   "ExpandedNodes": [
     "",
     "\\Source",
-    "\\Source\\BinauralPlugin"
+    "\\Source\\BinauralPlugin",
+    "\\Source\\Common",
+    "\\Source\\StandaloneEditor",
+    "\\Source\\VBAPPlugin"
   ],
-  "SelectedNode": "\\Source\\BinauralPlugin\\PluginProcessor.cpp",
+  "SelectedNode": "\\Source\\Common\\PluginEditor.cpp",
   "PreviewInSolutionExplorer": false
 }

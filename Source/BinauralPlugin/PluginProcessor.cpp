@@ -1,4 +1,6 @@
 #include "PluginProcessor.h"
+#include "../Common/TestSessionEditor.h"
+#include "../Common/PluginEditor.h"
 
 //==============================================================================
 AudioPluginAudioProcessor::AudioPluginAudioProcessor()
@@ -66,13 +68,12 @@ juce::File AudioPluginAudioProcessor::getDefaultHrirFolder() const
 float AudioPluginAudioProcessor::unwrapTargetAzimuthNearReference(float referenceDegrees,
     float targetDegrees) noexcept
 {
-    float wrappedReference = referenceDegrees;
     float wrappedTarget = vbap::wrap360(targetDegrees);
 
-    while ((wrappedTarget - wrappedReference) > 180.0f)
+    while ((wrappedTarget - referenceDegrees) > 180.0f)
         wrappedTarget -= 360.0f;
 
-    while ((wrappedTarget - wrappedReference) < -180.0f)
+    while ((wrappedTarget - referenceDegrees) < -180.0f)
         wrappedTarget += 360.0f;
 
     return wrappedTarget;
@@ -170,7 +171,6 @@ AudioPluginAudioProcessor::RenderSelection AudioPluginAudioProcessor::buildRende
 
     const auto pair = findActivePair(sourceAzimuthDeg, speakerAzimuths, speakerCount);
 
-    // Mirror because your HRIR convention is opposite in left/right lateral direction.
     const float mirroredAzimuthA = vbap::wrap360(360.0f - pair.azimuthA);
     const float mirroredAzimuthB = vbap::wrap360(360.0f - pair.azimuthB);
 
@@ -198,13 +198,24 @@ void AudioPluginAudioProcessor::buildMonoInput(juce::AudioBuffer<float>& buffer,
     monoInputBuffer.setSize(1, numSamples, false, false, true);
     monoInputBuffer.clear();
 
-    if (buffer.getNumChannels() > 0)
-        monoInputBuffer.copyFrom(0, 0, buffer, 0, 0, numSamples);
-
-    if (getTotalNumInputChannels() > 1 && buffer.getNumChannels() > 1)
+    // ── Check if internal audio player is active ─────────────────
+    if (audioPlayer.isPlaying())
     {
-        monoInputBuffer.addFrom(0, 0, buffer, 1, 0, numSamples);
-        monoInputBuffer.applyGain(0, 0, numSamples, 0.5f);
+        float* mono = monoInputBuffer.getWritePointer(0);
+        for (int i = 0; i < numSamples; ++i)
+            mono[i] = audioPlayer.getNextSample();
+    }
+    else
+    {
+        // Use DAW input (original behaviour)
+        if (buffer.getNumChannels() > 0)
+            monoInputBuffer.copyFrom(0, 0, buffer, 0, 0, numSamples);
+
+        if (getTotalNumInputChannels() > 1 && buffer.getNumChannels() > 1)
+        {
+            monoInputBuffer.addFrom(0, 0, buffer, 1, 0, numSamples);
+            monoInputBuffer.applyGain(0, 0, numSamples, 0.5f);
+        }
     }
 }
 
@@ -264,18 +275,14 @@ void AudioPluginAudioProcessor::renderSelectionSample(const RenderSelection& sel
     if (!selection.valid || selection.hrirA == nullptr)
         return;
 
-    // yL = conv(s*g1, hL(theta1)) + conv(s*g2, hL(theta2))
     yL += convolveHistoryWithIr(*selection.hrirA, 0, selection.gainA);
     if (selection.gainB > 0.0f && selection.hrirB != nullptr)
         yL += convolveHistoryWithIr(*selection.hrirB, 0, selection.gainB);
 
-    // yR = conv(s*g1, hR(theta1)) + conv(s*g2, hR(theta2))
     yR += convolveHistoryWithIr(*selection.hrirA, 1, selection.gainA);
     if (selection.gainB > 0.0f && selection.hrirB != nullptr)
         yR += convolveHistoryWithIr(*selection.hrirB, 1, selection.gainB);
 }
-
-
 
 void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     juce::MidiBuffer& midiMessages)
@@ -363,14 +370,13 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 }
 
 //==============================================================================
-bool AudioPluginAudioProcessor::hasEditor() const
-{
-    return false;
+bool AudioPluginAudioProcessor::hasEditor() const { 
+    return true; 
 }
 
 juce::AudioProcessorEditor* AudioPluginAudioProcessor::createEditor()
 {
-    return nullptr;
+    return new AudioPluginAudioProcessorEditor(*this);
 }
 
 const juce::String AudioPluginAudioProcessor::getName() const
@@ -473,15 +479,16 @@ AudioPluginAudioProcessor::createParameterLayout()
         "layoutMode",
         "Layout Mode",
         juce::StringArray{
-            "9 speakers (40°)",
-            "12 speakers (30°)",
-            "18 speakers (20°)",
-            "36 speakers (10°)"
+            "9 speakers (40 deg)",
+            "12 speakers (30 deg)",
+            "18 speakers (20 deg)",
+            "36 speakers (10 deg)"
         },
         3));
 
     return { params.begin(), params.end() };
 }
+
 bool AudioPluginAudioProcessor::hasAudibleSelectionChange(const RenderSelection& a,
     const RenderSelection& b) const noexcept
 {
@@ -496,6 +503,7 @@ bool AudioPluginAudioProcessor::hasAudibleSelectionChange(const RenderSelection&
 
     return false;
 }
+
 //==============================================================================
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
