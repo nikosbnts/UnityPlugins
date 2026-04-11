@@ -3,7 +3,8 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <array>
 #include "../Common/VbapEngine2D.h"
-#include "../Common/PluginEditor.h"
+#include "../Common/AudioPlayer.h"
+
 
 class AudioPluginAudioProcessor final : public juce::AudioProcessor
 {
@@ -38,8 +39,9 @@ public:
 
     using ParameterState = juce::AudioProcessorValueTreeState;
     ParameterState parameters;
+    AudioFilePlayer audioPlayer;
 
-    static constexpr int kMaxSpeakers = vbap::kMaxSpeakers;
+    static constexpr int kMaxSpeakers = 8;
 
 private:
     ParameterState::ParameterLayout createParameterLayout();

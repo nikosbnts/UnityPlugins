@@ -1,6 +1,5 @@
 #include "PluginProcessor.h"
-#include "../Common/TestSessionEditor.h"
-#include "../Common/PluginEditor.h"
+#include "BinauralTestSessionEditor.h"
 
 //==============================================================================
 AudioPluginAudioProcessor::AudioPluginAudioProcessor()
@@ -376,7 +375,7 @@ bool AudioPluginAudioProcessor::hasEditor() const {
 
 juce::AudioProcessorEditor* AudioPluginAudioProcessor::createEditor()
 {
-    return new AudioPluginAudioProcessorEditor(*this);
+    return new BinauralTestSessionEditor(*this);
 }
 
 const juce::String AudioPluginAudioProcessor::getName() const

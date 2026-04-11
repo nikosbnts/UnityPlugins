@@ -16,9 +16,14 @@ set(VBAP_UNITY_OUTPUT_NAME "audiopluginVBAP"
 set(BINAURAL_UNITY_OUTPUT_NAME "audiopluginBinaural"
     CACHE STRING "Output filename for the Unity Binaural plugin")
 
-# Optional: where Unity copies the built plugin automatically
+# =========================================================
+# Copy destinations
+# =========================================================
 set(UNITY_PLUGIN_COPY_DIR "C:/Users/nikos/Desktop/Diplomatiki/VST-Test/Assets/Plugins"
     CACHE PATH "Where to copy built Unity plugins when COPY_PLUGIN_AFTER_BUILD is TRUE")
+
+set(VST3_PLUGIN_COPY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/VST3"
+    CACHE PATH "Where to copy built VST3 plugins when COPY_PLUGIN_AFTER_BUILD is TRUE")
 
 # =========================================================
 # CPM + JUCE
@@ -42,24 +47,40 @@ CPMAddPackage(
 )
 
 # =========================================================
-# Common source files shared by both plugins
+# Shared files
 # =========================================================
 set(COMMON_SOURCE_FILES
     Source/Common/VbapEngine2D.h
-    Source/Common/HrirBank.h
-    Source/Common/HrirBank.cpp
     Source/Common/TestSession.h
     Source/Common/AudioPlayer.h
-    Source/Common/PluginEditor.h
-    Source/Common/PluginEditor.cpp
-    Source/Common/TestSessionEditor.h
-    Source/Common/TestSEssionEditor.cpp
+)
+
+# =========================================================
+# VBAP plugin files
+# =========================================================
+set(VBAP_SOURCE_FILES
+    Source/VBAPPlugin/PluginProcessor.h
+    Source/VBAPPlugin/PluginProcessor.cpp
+    Source/VBAPPlugin/VbapTestSessionEditor.h
+    Source/VBAPPlugin/VbapTestSessionEditor.cpp
+)
+
+# =========================================================
+# Binaural plugin files
+# =========================================================
+set(BINAURAL_SOURCE_FILES
+    Source/BinauralPlugin/PluginProcessor.h
+    Source/BinauralPlugin/PluginProcessor.cpp
+    Source/BinauralPlugin/HrirBank.h
+    Source/BinauralPlugin/HrirBank.cpp
+    Source/BinauralPlugin/BinauralTestSessionEditor.h
+    Source/BinauralPlugin/BinauralTestSessionEditor.cpp
 )
 
 # =========================================================
 # Helper function to create one JUCE plugin target
 # =========================================================
-function(add_juce_unity_plugin TARGET_NAME PRODUCT_NAME UNITY_OUTPUT_NAME PLUGIN_CODE PROCESSOR_H PROCESSOR_CPP)
+function(add_juce_unity_plugin TARGET_NAME PRODUCT_NAME UNITY_OUTPUT_NAME PLUGIN_CODE)
     juce_add_plugin(${TARGET_NAME}
         COMPANY_NAME "YourCompany"
         IS_SYNTH FALSE
@@ -71,6 +92,7 @@ function(add_juce_unity_plugin TARGET_NAME PRODUCT_NAME UNITY_OUTPUT_NAME PLUGIN
 
         COPY_PLUGIN_AFTER_BUILD TRUE
         UNITY_COPY_DIR "${UNITY_PLUGIN_COPY_DIR}"
+        VST3_COPY_DIR "${VST3_PLUGIN_COPY_DIR}"
 
         PLUGIN_MANUFACTURER_CODE JuPl
         PLUGIN_CODE ${PLUGIN_CODE}
@@ -85,6 +107,7 @@ function(add_juce_unity_plugin TARGET_NAME PRODUCT_NAME UNITY_OUTPUT_NAME PLUGIN
             OUTPUT_NAME "${UNITY_OUTPUT_NAME}")
     endif()
 
+    # Extra explicit Unity copy
     if (TARGET ${TARGET_NAME}_Unity)
         add_custom_command(TARGET ${TARGET_NAME}_Unity POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E make_directory "${UNITY_PLUGIN_COPY_DIR}"
@@ -96,9 +119,8 @@ function(add_juce_unity_plugin TARGET_NAME PRODUCT_NAME UNITY_OUTPUT_NAME PLUGIN
 
     target_sources(${TARGET_NAME}
         PRIVATE
-            ${PROCESSOR_H}
-            ${PROCESSOR_CPP}
             ${COMMON_SOURCE_FILES}
+            ${ARGN}
     )
 
     target_compile_definitions(${TARGET_NAME}
@@ -136,8 +158,7 @@ add_juce_unity_plugin(
     "VBAP"
     "${VBAP_UNITY_OUTPUT_NAME}"
     Vb01
-    "${CMAKE_CURRENT_SOURCE_DIR}/Source/VBAPPlugin/PluginProcessor.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Source/VBAPPlugin/PluginProcessor.cpp"
+    ${VBAP_SOURCE_FILES}
 )
 
 # =========================================================
@@ -148,8 +169,7 @@ add_juce_unity_plugin(
     "Binaural"
     "${BINAURAL_UNITY_OUTPUT_NAME}"
     Bi01
-    "${CMAKE_CURRENT_SOURCE_DIR}/Source/BinauralPlugin/PluginProcessor.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Source/BinauralPlugin/PluginProcessor.cpp"
+    ${BINAURAL_SOURCE_FILES}
 )
 
 # =========================================================
@@ -157,8 +177,6 @@ add_juce_unity_plugin(
 # =========================================================
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES
     ${COMMON_SOURCE_FILES}
-    Source/VBAPPlugin/PluginProcessor.h
-    Source/VBAPPlugin/PluginProcessor.cpp
-    Source/BinauralPlugin/PluginProcessor.h
-    Source/BinauralPlugin/PluginProcessor.cpp
+    ${VBAP_SOURCE_FILES}
+    ${BINAURAL_SOURCE_FILES}
 )

@@ -3,6 +3,7 @@
 #include <juce_core/juce_core.h>
 #include <vector>
 #include <cmath>
+#include <algorithm>
 
 struct TrialResult
 {
@@ -20,18 +21,18 @@ struct TestSession
 
     Screen screen = Screen::Setup;
     juce::String sessionName = "Session 1";
-    int layoutMode = 3;                // 0=9spk, 1=12spk, 2=18spk, 3=36spk
+    juce::String setupLabel = "-";
+
     std::vector<float> targetAngles;
     std::vector<TrialResult> results;
     int currentTrial = 0;
 
-    float userResponse = -1.0f;        // -1 = not set
-    int userConfidence = 0;            // 0 = not set
+    float userResponse = -1.0f;   // -1 = not set
+    int userConfidence = 0;       // 0 = not set
 
     juce::String audioFilePath;
     bool useInternalAudio = false;
 
-    // ── helpers ──────────────────────────────────────────────
     static float angularError(float a, float b)
     {
         float e = std::fmod(std::abs(a - b), 360.0f);
@@ -41,6 +42,7 @@ struct TestSession
     void reset()
     {
         screen = Screen::Setup;
+        setupLabel = "-";
         results.clear();
         currentTrial = 0;
         userResponse = -1.0f;
@@ -54,7 +56,8 @@ struct TestSession
 
     void submitCurrentTrial()
     {
-        if (currentTrial >= static_cast<int>(targetAngles.size())) return;
+        if (currentTrial >= static_cast<int>(targetAngles.size()))
+            return;
 
         TrialResult r;
         r.trialNumber = currentTrial + 1;
@@ -80,102 +83,106 @@ struct TestSession
 
     float meanError() const
     {
-        if (results.empty()) return 0.0f;
+        if (results.empty())
+            return 0.0f;
+
         float sum = 0.0f;
-        for (auto& r : results) sum += r.angularError;
+        for (const auto& r : results)
+            sum += r.angularError;
+
         return sum / static_cast<float>(results.size());
     }
 
     float bestError() const
     {
-        float b = 999.0f;
-        for (auto& r : results) b = std::min(b, r.angularError);
+        if (results.empty())
+            return 0.0f;
+
+        float b = results.front().angularError;
+        for (const auto& r : results)
+            b = std::min(b, r.angularError);
+
         return b;
     }
 
     float worstError() const
     {
-        float w = 0.0f;
-        for (auto& r : results) w = std::max(w, r.angularError);
+        if (results.empty())
+            return 0.0f;
+
+        float w = results.front().angularError;
+        for (const auto& r : results)
+            w = std::max(w, r.angularError);
+
         return w;
     }
 
     static juce::String escapeForCSV(const juce::String& text, juce::juce_wchar sep = ';')
-{
-    auto escaped = text;
-    escaped = escaped.replace("\"", "\"\"");
-
-    const bool needsQuotes =
-        escaped.containsChar(sep) ||
-        escaped.containsChar('"') ||
-        escaped.containsChar('\n') ||
-        escaped.containsChar('\r');
-
-    return needsQuotes ? "\"" + escaped + "\"" : escaped;
-}
-
-static juce::String numberForExcel(float value)
-{
-    // Για καλύτερη συμβατότητα με ελληνικό Excel
-    return juce::String(value, 1).replaceCharacter('.', ',');
-}
-
-juce::String toCSV() const
-{
-    constexpr juce::juce_wchar sep = ';';
-
-    juce::String layoutStr;
-    switch (layoutMode)
     {
-        case 0: layoutStr = "9spk";  break;
-        case 1: layoutStr = "12spk"; break;
-        case 2: layoutStr = "18spk"; break;
-        default: layoutStr = "36spk"; break;
+        auto escaped = text;
+        escaped = escaped.replace("\"", "\"\"");
+
+        const bool needsQuotes =
+            escaped.containsChar(sep) ||
+            escaped.containsChar('"') ||
+            escaped.containsChar('\n') ||
+            escaped.containsChar('\r');
+
+        return needsQuotes ? "\"" + escaped + "\"" : escaped;
     }
 
-    juce::String csv;
-
-    // ── Session info ─────────────────────────────────────
-    csv << "Session Name" << sep << escapeForCSV(sessionName, sep) << "\n";
-    csv << "Layout"       << sep << layoutStr << "\n";
-    csv << "Audio Source" << sep << (useInternalAudio ? "Internal file" : "DAW input") << "\n";
-    csv << "Audio File"   << sep
-        << escapeForCSV(audioFilePath.isNotEmpty() ? audioFilePath : "-", sep) << "\n";
-    csv << "Total Trials" << sep << juce::String(results.size()) << "\n";
-    csv << "\n";
-
-    // ── Results table ───────────────────────────────────
-    csv << "Trial" << sep
-        << "TargetAngle" << sep
-        << "ResponseAngle" << sep
-        << "AngularError" << sep
-        << "Confidence" << sep
-        << "Timestamp" << "\n";
-
-    for (const auto& r : results)
+    static juce::String numberForExcel(float value)
     {
-        csv << juce::String(r.trialNumber) << sep
-            << numberForExcel(r.targetAngle) << sep
-            << numberForExcel(r.responseAngle) << sep
-            << numberForExcel(r.angularError) << sep
-            << juce::String(r.confidence) << sep
-            << escapeForCSV(r.timestamp, sep) << "\n";
+        return juce::String(value, 1).replaceCharacter('.', ',');
     }
 
-    return csv;
-}
+    juce::String toCSV() const
+    {
+        constexpr juce::juce_wchar sep = ';';
+
+        juce::String csv;
+
+        csv << "Session Name" << sep << escapeForCSV(sessionName, sep) << "\n";
+        csv << "Setup"        << sep << escapeForCSV(setupLabel, sep) << "\n";
+        csv << "Audio Source" << sep << (useInternalAudio ? "Internal file" : "DAW input") << "\n";
+        csv << "Audio File"   << sep
+            << escapeForCSV(audioFilePath.isNotEmpty() ? audioFilePath : "-", sep) << "\n";
+        csv << "Total Trials" << sep << juce::String(results.size()) << "\n";
+        csv << "\n";
+
+        csv << "Trial" << sep
+            << "TargetAngle" << sep
+            << "ResponseAngle" << sep
+            << "AngularError" << sep
+            << "Confidence" << sep
+            << "Timestamp" << "\n";
+
+        for (const auto& r : results)
+        {
+            csv << juce::String(r.trialNumber) << sep
+                << numberForExcel(r.targetAngle) << sep
+                << numberForExcel(r.responseAngle) << sep
+                << numberForExcel(r.angularError) << sep
+                << juce::String(r.confidence) << sep
+                << escapeForCSV(r.timestamp, sep) << "\n";
+        }
+
+        return csv;
+    }
 
     static std::vector<float> parseAngles(const juce::String& text)
     {
         std::vector<float> out;
         juce::StringArray tokens;
         tokens.addTokens(text, ",; \t\n", "");
+
         for (auto& t : tokens)
         {
             float v = t.trim().getFloatValue();
             if (t.trim().isNotEmpty() && v >= 0.0f && v <= 360.0f)
                 out.push_back(v);
         }
+
         return out;
     }
 
@@ -193,5 +200,3 @@ juce::String toCSV() const
         return { 0, 45, 90, 135, 180, 225, 270, 315 };
     }
 };
-
-

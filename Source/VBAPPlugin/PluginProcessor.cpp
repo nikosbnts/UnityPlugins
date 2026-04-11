@@ -1,5 +1,5 @@
 #include "PluginProcessor.h"
-#include "../Common/PluginEditor.h"
+#include "VbapTestSessionEditor.h"
 
 AudioPluginAudioProcessor::AudioPluginAudioProcessor()
     : AudioProcessor(BusesProperties()
@@ -7,21 +7,22 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
 #if ! JucePlugin_IsSynth
         .withInput("Input", juce::AudioChannelSet::stereo(), true)
 #endif
-        .withOutput("Output", juce::AudioChannelSet::create7point1(), true)
+        .withOutput("Output", juce::AudioChannelSet::discreteChannels(8), true)
 #endif
     ),
     parameters(*this, nullptr, "ParameterTree", createParameterLayout())
 {
-    inputGainParam = parameters.getRawParameterValue("inputGain");
+    inputGainParam     = parameters.getRawParameterValue("inputGain");
     sourceAzimuthParam = parameters.getRawParameterValue("sourceAzimuth");
-    speakerCountParam = parameters.getRawParameterValue("speakerCount");
+    speakerCountParam  = parameters.getRawParameterValue("speakerCount");
 
     for (int i = 0; i < kMaxSpeakers; ++i)
-        speakerAzParams[i] = parameters.getRawParameterValue("speakerAz" + juce::String(i + 1));
+        speakerAzParams[(size_t) i] = parameters.getRawParameterValue("speakerAz" + juce::String(i + 1));
 }
 
-void AudioPluginAudioProcessor::prepareToPlay(double, int samplesPerBlock)
+void AudioPluginAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
+    juce::ignoreUnused(sampleRate);
     tempMonoInput.setSize(1, juce::jmax(1, samplesPerBlock), false, false, true);
 }
 
@@ -41,7 +42,6 @@ bool AudioPluginAudioProcessor::isBusesLayoutSupported(const BusesLayout& layout
     const auto out = layouts.getMainOutputChannelSet();
     const int outCh = out.size();
 
-    // Current practical Unity target: 2..8 physical outputs.
     if (outCh < 2 || outCh > 8)
         return false;
 
@@ -49,7 +49,7 @@ bool AudioPluginAudioProcessor::isBusesLayoutSupported(const BusesLayout& layout
 }
 
 void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
-    juce::MidiBuffer& midiMessages)
+                                             juce::MidiBuffer& midiMessages)
 {
     juce::ignoreUnused(midiMessages);
     juce::ScopedNoDenormals noDenormals;
@@ -66,54 +66,68 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
     tempMonoInput.clear(0, 0, numSamples);
 
-    // Build mono input from first one or two input channels
-    if (inCh > 0)
-        tempMonoInput.copyFrom(0, 0, buffer, 0, 0, numSamples);
-
-    if (inCh > 1)
+    if (audioPlayer.isPlaying())
     {
-        tempMonoInput.addFrom(0, 0, buffer, 1, 0, numSamples);
-        tempMonoInput.applyGain(0, 0, numSamples, 0.5f);
+        float* mono = tempMonoInput.getWritePointer(0);
+        for (int i = 0; i < numSamples; ++i)
+            mono[i] = audioPlayer.getNextSample();
+    }
+    else
+    {
+        if (inCh > 0)
+            tempMonoInput.copyFrom(0, 0, buffer, 0, 0, numSamples);
+
+        if (inCh > 1)
+        {
+            tempMonoInput.addFrom(0, 0, buffer, 1, 0, numSamples);
+            tempMonoInput.applyGain(0, 0, numSamples, 0.5f);
+        }
     }
 
-    // Clear all outputs first
     for (int ch = 0; ch < outCh; ++ch)
         buffer.clear(ch, 0, numSamples);
 
     const float inputGain = inputGainParam ? inputGainParam->load() : 1.0f;
     const float srcAz = sourceAzimuthParam ? sourceAzimuthParam->load() : 0.0f;
 
-    int requestedSpeakers = speakerCountParam ? juce::roundToInt(speakerCountParam->load()) : 2;
-    requestedSpeakers = juce::jlimit(2, kMaxSpeakers, requestedSpeakers);
+    int requestedSpeakers = speakerCountParam ? juce::roundToInt(speakerCountParam->load()) : 4;
+    requestedSpeakers = juce::jlimit(2, 8, requestedSpeakers);
 
-    const int activeSpeakerCount = juce::jmin(requestedSpeakers, outCh, kMaxSpeakers);
+    const int activeSpeakerCount = juce::jmin(requestedSpeakers, outCh, 8);
     if (activeSpeakerCount < 2)
         return;
 
-    std::array<float, kMaxSpeakers> speakerAz{};
-    std::array<float, kMaxSpeakers> gainsMono{};
-    std::array<float, kMaxSpeakers> defaults{};
+    std::array<float, kMaxSpeakers> speakerAz {};
+    std::array<float, kMaxSpeakers> gainsMono {};
 
-    vbap::DefaultVBAPLayoutAngles(activeSpeakerCount);
+    const auto defaultLayout = vbap::DefaultVBAPLayoutAngles(activeSpeakerCount);
 
     for (int i = 0; i < activeSpeakerCount; ++i)
     {
-        const float raw = (speakerAzParams[i] != nullptr) ? speakerAzParams[i]->load()
-            : defaults[i];
-        speakerAz[i] = vbap::wrap360(raw);
+        float fallback = 0.0f;
+        if (i < static_cast<int>(defaultLayout.size()))
+            fallback = defaultLayout[(size_t) i];
+        else
+            fallback = vbap::wrap360((360.0f / static_cast<float>(activeSpeakerCount)) * static_cast<float>(i));
+
+        const float raw = (speakerAzParams[(size_t) i] != nullptr)
+            ? speakerAzParams[(size_t) i]->load()
+            : fallback;
+
+        speakerAz[(size_t) i] = vbap::wrap360(raw);
     }
 
     vbap::computeVBAP_N(vbap::wrap360(srcAz),
-        speakerAz.data(),
-        activeSpeakerCount,
-        gainsMono.data());
+                        speakerAz.data(),
+                        activeSpeakerCount,
+                        gainsMono.data());
 
     const float* monoIn = tempMonoInput.getReadPointer(0);
 
     for (int ch = 0; ch < activeSpeakerCount; ++ch)
     {
         float* out = buffer.getWritePointer(ch);
-        const float totalGain = inputGain * gainsMono[ch];
+        const float totalGain = inputGain * gainsMono[(size_t) ch];
 
         for (int i = 0; i < numSamples; ++i)
             out[i] = monoIn[i] * totalGain;
@@ -123,8 +137,15 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         buffer.clear(ch, 0, numSamples);
 }
 
-bool AudioPluginAudioProcessor::hasEditor() const { return false; }
-juce::AudioProcessorEditor* AudioPluginAudioProcessor::createEditor() { return nullptr; }
+bool AudioPluginAudioProcessor::hasEditor() const
+{
+    return true;
+}
+
+juce::AudioProcessorEditor* AudioPluginAudioProcessor::createEditor()
+{
+    return new VbapTestSessionEditor(*this);
+}
 
 const juce::String AudioPluginAudioProcessor::getName() const
 {
@@ -223,20 +244,24 @@ AudioPluginAudioProcessor::createParameterLayout()
         2, kMaxSpeakers, 2));
 
     std::array<float, kMaxSpeakers> defaults{};
-    vbap::DefaultVBAPLayoutAngles(8);
+    const auto defaultLayout8 = vbap::DefaultVBAPLayoutAngles(8);
+
+    for (size_t i = 0; i < defaultLayout8.size() && i < defaults.size(); ++i)
+        defaults[i] = defaultLayout8[i];
 
     for (int i = 0; i < kMaxSpeakers; ++i)
     {
         float def = 0.0f;
         if (i < 8)
-            def = defaults[i];
+            def = defaults[static_cast<size_t>(i)];
         else
             def = vbap::wrap360((360.0f / static_cast<float>(kMaxSpeakers)) * static_cast<float>(i));
 
         params.push_back(std::make_unique<juce::AudioParameterFloat>(
             "speakerAz" + juce::String(i + 1),
             "Speaker " + juce::String(i + 1) + " Azimuth",
-            juce::NormalisableRange<float>(0.0f, 360.0f, 0.01f), def));
+            juce::NormalisableRange<float>(0.0f, 360.0f, 0.01f),
+            def));
     }
 
     return { params.begin(), params.end() };

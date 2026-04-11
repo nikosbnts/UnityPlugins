@@ -4,8 +4,8 @@
 #include <array>
 #include <vector>
 #include "../Common/VbapEngine2D.h"
-#include "../Common/HrirBank.h"
 #include "../Common/AudioPlayer.h"
+#include "HrirBank.h"
 
 class AudioPluginAudioProcessor final : public juce::AudioProcessor
 {
