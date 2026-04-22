@@ -10,9 +10,8 @@
     "\\Source",
     "\\Source\\BinauralPlugin",
     "\\Source\\Common",
-    "\\Source\\StandaloneEditor",
     "\\Source\\VBAPPlugin"
   ],
-  "SelectedNode": "\\Source\\Common\\PluginEditor.cpp",
+  "SelectedNode": "\\Source\\BinauralPlugin\\PluginProcessor.h",
   "PreviewInSolutionExplorer": false
 }

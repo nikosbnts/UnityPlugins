@@ -61,7 +61,7 @@ bool AudioPluginAudioProcessor::isBusesLayoutSupported(const BusesLayout& layout
 
 juce::File AudioPluginAudioProcessor::getDefaultHrirFolder() const
 {
-    return juce::File("C:/Users/nikos/Desktop/Diplomatiki/JucePlugins/Assets/HRIR");
+    return juce::File("C:/Users/nikos/Desktop/Diplomatiki/JucePlugins/Assets/0ele/48K_24bit_0ele");
 }
 
 float AudioPluginAudioProcessor::unwrapTargetAzimuthNearReference(float referenceDegrees,
@@ -82,10 +82,10 @@ AudioPluginAudioProcessor::LayoutDefinition AudioPluginAudioProcessor::getLayout
 {
     switch (layoutMode)
     {
-    case 0: return { 9, 40 };
-    case 1: return { 12, 30 };
-    case 2: return { 18, 20 };
-    case 3: return { 36, 10 };
+    case 1: return { 9, 40 };
+    case 2: return { 12, 30 };
+    case 3: return { 18, 20 };
+    case 4: return { 36, 10 };
     default: return { 36, 10 };
     }
 }
@@ -164,6 +164,22 @@ AudioPluginAudioProcessor::RenderSelection AudioPluginAudioProcessor::buildRende
     if (!hrirLoaded || !hrirBank.isLoaded())
         return selection;
 
+    // ── Direct HRTF mode ────────────────────────────────────────────
+    if (layoutMode == 0)
+    {
+        const float mirroredAz = vbap::wrap360(360.0f - vbap::wrap360(sourceAzimuthDeg));
+
+        selection.hrirA = hrirBank.getNearest(mirroredAz);
+        selection.hrirB = nullptr;
+        selection.hrirAzimuthA = selection.hrirA != nullptr ? selection.hrirA->azimuthDeg : -1;
+        selection.hrirAzimuthB = -1;
+        selection.gainA = 1.0f;
+        selection.gainB = 0.0f;
+        selection.valid = (selection.hrirA != nullptr);
+        return selection;
+    }
+
+    // ── VBAP mode (unchanged, just uses the 1-4 indices now) ───────
     std::array<float, kMaxSpeakers> speakerAzimuths{};
     int speakerCount = 36;
     fillSpeakerAnglesForLayout(layoutMode, speakerAzimuths, speakerCount);
@@ -185,7 +201,6 @@ AudioPluginAudioProcessor::RenderSelection AudioPluginAudioProcessor::buildRende
 
     return selection;
 }
-
 bool AudioPluginAudioProcessor::hasDifferentHrirPair(const RenderSelection& a,
     const RenderSelection& b) const noexcept
 {
@@ -302,7 +317,7 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         return;
 
     const float inputGain = inputGainParam ? inputGainParam->load() : 1.0f;
-    const int layoutMode = layoutModeParam ? juce::roundToInt(layoutModeParam->load()) : 3;
+    const int layoutMode = layoutModeParam ? juce::roundToInt(layoutModeParam->load()) : 4;
     const float targetSourceAzimuth = sourceAzimuthParam ? sourceAzimuthParam->load() : 0.0f;
 
     const float currentSmoothedAzimuth = smoothedSourceAzimuth.getCurrentValue();
@@ -474,16 +489,17 @@ AudioPluginAudioProcessor::createParameterLayout()
         juce::NormalisableRange<float>(0.0f, 360.0f, 0.01f),
         0.0f));
 
-    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        params.push_back(std::make_unique<juce::AudioParameterChoice>(
         "layoutMode",
         "Layout Mode",
         juce::StringArray{
-            "9 speakers (40 deg)",
-            "12 speakers (30 deg)",
-            "18 speakers (20 deg)",
-            "36 speakers (10 deg)"
+            "Direct HRTF (1 deg)",
+            "VBAP 9 speakers (40 deg)",
+            "VBAP 12 speakers (30 deg)",
+            "VBAP 18 speakers (20 deg)",
+            "VBAP 36 speakers (10 deg)"
         },
-        3));
+        4));
 
     return { params.begin(), params.end() };
 }

@@ -25,11 +25,12 @@ BinauralTestSessionEditor::BinauralTestSessionEditor(AudioPluginAudioProcessor& 
     numTrialsEditor.setInputRestrictions(2, "0123456789");
     addChildComponent(numTrialsEditor);
 
-    layoutBox.addItem("9 speakers (40 deg)",  1);
-    layoutBox.addItem("12 speakers (30 deg)", 2);
-    layoutBox.addItem("18 speakers (20 deg)", 3);
-    layoutBox.addItem("36 speakers (10 deg)", 4);
-    layoutBox.setSelectedId(4);
+    layoutBox.addItem("Direct HRTF (1 deg)",       1);
+    layoutBox.addItem("VBAP 9 speakers (40 deg)",  2);
+    layoutBox.addItem("VBAP 12 speakers (30 deg)", 3);
+    layoutBox.addItem("VBAP 18 speakers (20 deg)", 4);
+    layoutBox.addItem("VBAP 36 speakers (10 deg)", 5);
+    layoutBox.setSelectedId(5);
     addChildComponent(layoutBox);
 
     randomBtn.onClick  = [this] { onRandomize(); };
@@ -136,6 +137,8 @@ void BinauralTestSessionEditor::showSummaryWidgets(bool v)
     newSessBtn.setVisible(v);
 }
 
+
+
 //==============================================================================
 //  Actions
 //==============================================================================
@@ -189,19 +192,18 @@ void BinauralTestSessionEditor::onLoadAudio()
         });
 }
 
-
 juce::String BinauralTestSessionEditor::buildLayoutLabel() const
 {
     switch (selectedLayoutMode)
     {
-        case 0: return "9 speakers (40 deg)";
-        case 1: return "12 speakers (30 deg)";
-        case 2: return "18 speakers (20 deg)";
-        case 3: return "36 speakers (10 deg)";
-        default: return "36 speakers (10 deg)";
+    case 0: return "Direct HRTF (1 deg)";
+    case 1: return "VBAP 9 speakers (40 deg)";
+    case 2: return "VBAP 12 speakers (30 deg)";
+    case 3: return "VBAP 18 speakers (20 deg)";
+    case 4: return "VBAP 36 speakers (10 deg)";
+    default: return "VBAP 36 speakers (10 deg)";
     }
 }
-
 void BinauralTestSessionEditor::onStart()
 {
     session.sessionName = nameEditor.getText().trim();
@@ -460,12 +462,10 @@ void BinauralTestSessionEditor::paintSetup(juce::Graphics& g)
                16,
                juce::Justification::centredLeft);
 
-    g.drawText("Speaker layout",
-               layoutBox.getX(),
-               layoutBox.getY() - 18,
-               220,
-               16,
-               juce::Justification::centredLeft);
+    g.drawText("Rendering mode",
+        layoutBox.getX(),
+        layoutBox.getY() - 18,
+        220, 16, juce::Justification::centredLeft);
 
     g.drawText("Source angles (degrees, 0-360, comma-separated)",
                anglesEditor.getX(),

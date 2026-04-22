@@ -22,7 +22,7 @@ private:
     AudioPluginAudioProcessor& processorRef;
     TestSession session;
 
-    int selectedLayoutMode = 3;
+    int selectedLayoutMode = 4;
 
     static constexpr juce::uint32 colBg = 0xFFF7F5EF;
     static constexpr juce::uint32 colCard = 0xFFFFFFFF;

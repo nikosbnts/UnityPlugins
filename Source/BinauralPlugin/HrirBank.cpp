@@ -15,7 +15,9 @@ bool HrirBank::loadFromFolder(const juce::File& folder)
     if (!folder.exists() || !folder.isDirectory())
         return false;
 
-    for (int az = 0; az < 360; az += 10)
+    entries.reserve(static_cast<size_t>(kNumAzimuths));
+
+    for (int az = 0; az < kNumAzimuths; az += kAzimuthStepDeg)
     {
         const auto file = folder.getChildFile(makeExpectedFileName(az));
         if (!file.existsAsFile())
@@ -43,7 +45,7 @@ bool HrirBank::loadFromFolder(const juce::File& folder)
         entries.push_back(std::move(e));
     }
 
-    return !entries.empty();
+    return static_cast<int>(entries.size()) == kNumAzimuths;
 }
 
 bool HrirBank::isLoaded() const noexcept
@@ -56,25 +58,25 @@ const HrirBank::Entry* HrirBank::getNearest(float azimuthDeg) const noexcept
     if (entries.empty())
         return nullptr;
 
-    const int wanted = wrapAzimuthToNearest10(azimuthDeg);
+    const int wanted = wrapAzimuthToNearest1(azimuthDeg);
 
-    for (const auto& entry : entries)
-    {
-        if (entry.azimuthDeg == wanted)
-            return &entry;
-    }
+    // Entries are loaded in order 0..359, so direct indexing works.
+    if (wanted >= 0 && wanted < static_cast<int>(entries.size()))
+        return &entries[static_cast<size_t>(wanted)];
 
     return &entries.front();
 }
 
-int HrirBank::wrapAzimuthToNearest10(float azimuthDeg) noexcept
+int HrirBank::wrapAzimuthToNearest1(float azimuthDeg) noexcept
 {
     float wrapped = std::fmod(azimuthDeg, 360.0f);
     if (wrapped < 0.0f)
         wrapped += 360.0f;
 
-    int rounded = static_cast<int>(std::round(wrapped / 10.0f)) * 10;
-    if (rounded == 360)
+    int rounded = static_cast<int>(std::round(wrapped));
+    if (rounded >= 360)
+        rounded = 0;
+    if (rounded < 0)
         rounded = 0;
 
     return rounded;
