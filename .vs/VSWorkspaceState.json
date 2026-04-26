@@ -12,6 +12,6 @@
     "\\Source\\Common",
     "\\Source\\VBAPPlugin"
   ],
-  "SelectedNode": "\\Source\\BinauralPlugin\\PluginProcessor.h",
+  "SelectedNode": "\\Source\\BinauralPlugin\\PluginProcessor.cpp",
   "PreviewInSolutionExplorer": false
 }

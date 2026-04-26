@@ -41,19 +41,23 @@ public:
     using ParameterState = juce::AudioProcessorValueTreeState;
     ParameterState parameters;
 
+ 
     /** Internal audio player – the editor uses this to load/play stimulus files. */
     AudioFilePlayer audioPlayer;
+
+    /** Logs the active VBAP pair (or HRTF) for a given source azimuth, using
+        the current layoutMode + topology parameters. Call from the editor when
+        a new trial begins. */
+    void logCurrentTrialSelection(float targetAzimuthDeg) const;
+
+    /** True if the given layout mode supports an asymmetric topology. */
+    static bool layoutSupportsAsymmetric(int layoutMode) noexcept;
+
 
 private:
     static constexpr int kMaxSpeakers = vbap::kMaxSpeakers;
     static constexpr double kSourceAzimuthSmoothingTimeSeconds = 0.02;
     static constexpr double kSelectionCrossfadeTimeSeconds = 0.04;
-
-    struct LayoutDefinition
-    {
-        int speakerCount = 36;
-        int stepDegrees = 10;
-    };
 
     struct ActivePair
     {
@@ -80,8 +84,9 @@ private:
 
     juce::File getDefaultHrirFolder() const;
 
-    LayoutDefinition getLayoutDefinition(int layoutMode) const noexcept;
+    /** Builds the speaker layout for the given (layoutMode, topology) pair. */
     void fillSpeakerAnglesForLayout(int layoutMode,
+        int topology,
         std::array<float, kMaxSpeakers>& speakerAzimuths,
         int& speakerCount) const;
 
@@ -89,7 +94,10 @@ private:
         const std::array<float, kMaxSpeakers>& speakerAzimuths,
         int speakerCount) const noexcept;
 
-    RenderSelection buildRenderSelection(float sourceAzimuthDeg, int layoutMode) const noexcept;
+    RenderSelection buildRenderSelection(float sourceAzimuthDeg,
+        int layoutMode,
+        int topology) const noexcept;
+
     bool hasDifferentHrirPair(const RenderSelection& a, const RenderSelection& b) const noexcept;
     bool hasAudibleSelectionChange(const RenderSelection& a, const RenderSelection& b) const noexcept;
 
@@ -103,6 +111,7 @@ private:
     std::atomic<float>* inputGainParam = nullptr;
     std::atomic<float>* sourceAzimuthParam = nullptr;
     std::atomic<float>* layoutModeParam = nullptr;
+    std::atomic<float>* topologyParam = nullptr;
 
     juce::AudioBuffer<float> monoInputBuffer;
 
@@ -119,6 +128,8 @@ private:
     RenderSelection previousSelection;
     int selectionCrossfadeLengthSamples = 0;
     int selectionCrossfadeSamplesRemaining = 0;
-
+    // DEBUG state
+    int lastLoggedLayoutMode = -1;
+    int lastLoggedTopology = -1;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginAudioProcessor)
 };

@@ -16,6 +16,7 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
     inputGainParam = parameters.getRawParameterValue("inputGain");
     sourceAzimuthParam = parameters.getRawParameterValue("sourceAzimuth");
     layoutModeParam = parameters.getRawParameterValue("layoutMode");
+    topologyParam = parameters.getRawParameterValue("topology");
 }
 
 void AudioPluginAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
@@ -37,6 +38,9 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate, int samplesPerB
 
     currentSelection = {};
     previousSelection = {};
+
+    lastLoggedLayoutMode = -1;
+    lastLoggedTopology = -1;
 }
 
 void AudioPluginAudioProcessor::releaseResources()
@@ -78,27 +82,58 @@ float AudioPluginAudioProcessor::unwrapTargetAzimuthNearReference(float referenc
     return wrappedTarget;
 }
 
-AudioPluginAudioProcessor::LayoutDefinition AudioPluginAudioProcessor::getLayoutDefinition(int layoutMode) const noexcept
+bool AudioPluginAudioProcessor::layoutSupportsAsymmetric(int layoutMode) noexcept
 {
-    switch (layoutMode)
-    {
-    case 1: return { 9, 40 };
-    case 2: return { 12, 30 };
-    case 3: return { 18, 20 };
-    case 4: return { 36, 10 };
-    default: return { 36, 10 };
-    }
+    // Direct HRTF (0) and VBAP 36 (4) have only one topology.
+    return layoutMode == 1 || layoutMode == 2 || layoutMode == 3;
 }
 
 void AudioPluginAudioProcessor::fillSpeakerAnglesForLayout(int layoutMode,
+    int topology,
     std::array<float, kMaxSpeakers>& speakerAzimuths,
     int& speakerCount) const
 {
-    const auto layout = getLayoutDefinition(layoutMode);
-    speakerCount = layout.speakerCount;
+    // Asymmetric topologies (front/back denser, sides sparser).
+    static constexpr float asym9[] = {
+        0.0f, 30.0f, 60.0f, 90.0f, 135.0f, 180.0f, 225.0f, 270.0f, 300.0f
+    };
+    static constexpr float asym12[] = {
+        0.0f, 20.0f, 40.0f, 60.0f, 90.0f, 120.0f,
+        160.0f, 180.0f, 200.0f, 240.0f, 280.0f, 320.0f
+    };
+    static constexpr float asym18[] = {
+        0.0f, 15.0f, 30.0f, 60.0f, 75.0f, 90.0f, 105.0f, 135.0f, 165.0f,
+        180.0f, 195.0f, 225.0f, 255.0f, 270.0f, 285.0f, 300.0f, 330.0f, 345.0f
+    };
 
-    for (int i = 0; i < speakerCount; ++i)
-        speakerAzimuths[i] = vbap::wrap360(static_cast<float>(i * layout.stepDegrees));
+    int symCount = 36;
+    int symStep = 10;
+    const float* asymArray = nullptr;
+    int asymCount = 0;
+
+    switch (layoutMode)
+    {
+    case 1: symCount = 9;  symStep = 40; asymArray = asym9;  asymCount = 9;  break;
+    case 2: symCount = 12; symStep = 30; asymArray = asym12; asymCount = 12; break;
+    case 3: symCount = 18; symStep = 20; asymArray = asym18; asymCount = 18; break;
+    case 4: symCount = 36; symStep = 10; asymArray = nullptr; asymCount = 0; break;
+    default: symCount = 36; symStep = 10; asymArray = nullptr; asymCount = 0; break;
+    }
+
+    const bool useAsym = (topology == 1) && (asymArray != nullptr);
+
+    if (useAsym)
+    {
+        speakerCount = asymCount;
+        for (int i = 0; i < speakerCount; ++i)
+            speakerAzimuths[i] = vbap::wrap360(asymArray[i]);
+    }
+    else
+    {
+        speakerCount = symCount;
+        for (int i = 0; i < speakerCount; ++i)
+            speakerAzimuths[i] = vbap::wrap360(static_cast<float>(i * symStep));
+    }
 
     for (int i = speakerCount; i < kMaxSpeakers; ++i)
         speakerAzimuths[i] = 0.0f;
@@ -157,7 +192,8 @@ AudioPluginAudioProcessor::ActivePair AudioPluginAudioProcessor::findActivePair(
 }
 
 AudioPluginAudioProcessor::RenderSelection AudioPluginAudioProcessor::buildRenderSelection(float sourceAzimuthDeg,
-    int layoutMode) const noexcept
+    int layoutMode,
+    int topology) const noexcept
 {
     RenderSelection selection{};
 
@@ -179,10 +215,10 @@ AudioPluginAudioProcessor::RenderSelection AudioPluginAudioProcessor::buildRende
         return selection;
     }
 
-    // ── VBAP mode (unchanged, just uses the 1-4 indices now) ───────
+    // ── VBAP mode ───────────────────────────────────────────────────
     std::array<float, kMaxSpeakers> speakerAzimuths{};
     int speakerCount = 36;
-    fillSpeakerAnglesForLayout(layoutMode, speakerAzimuths, speakerCount);
+    fillSpeakerAnglesForLayout(layoutMode, topology, speakerAzimuths, speakerCount);
 
     const auto pair = findActivePair(sourceAzimuthDeg, speakerAzimuths, speakerCount);
 
@@ -201,6 +237,7 @@ AudioPluginAudioProcessor::RenderSelection AudioPluginAudioProcessor::buildRende
 
     return selection;
 }
+
 bool AudioPluginAudioProcessor::hasDifferentHrirPair(const RenderSelection& a,
     const RenderSelection& b) const noexcept
 {
@@ -318,6 +355,7 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
     const float inputGain = inputGainParam ? inputGainParam->load() : 1.0f;
     const int layoutMode = layoutModeParam ? juce::roundToInt(layoutModeParam->load()) : 4;
+    const int topology = topologyParam ? juce::roundToInt(topologyParam->load()) : 0;
     const float targetSourceAzimuth = sourceAzimuthParam ? sourceAzimuthParam->load() : 0.0f;
 
     const float currentSmoothedAzimuth = smoothedSourceAzimuth.getCurrentValue();
@@ -333,7 +371,7 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     for (int sample = 0; sample < numSamples; ++sample)
     {
         const float smoothedAzimuth = smoothedSourceAzimuth.getNextValue();
-        const RenderSelection sampleSelection = buildRenderSelection(smoothedAzimuth, layoutMode);
+        const RenderSelection sampleSelection = buildRenderSelection(smoothedAzimuth, layoutMode, topology);
 
         if (!currentSelection.valid)
         {
@@ -384,8 +422,44 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 }
 
 //==============================================================================
-bool AudioPluginAudioProcessor::hasEditor() const { 
-    return true; 
+void AudioPluginAudioProcessor::logCurrentTrialSelection(float targetAzimuthDeg) const
+{
+    const int layoutMode = layoutModeParam ? juce::roundToInt(layoutModeParam->load()) : 4;
+    const int topology = topologyParam ? juce::roundToInt(topologyParam->load()) : 0;
+
+    const juce::String topologyName = (topology == 1) ? "Asymmetric" : "Symmetric";
+
+    if (layoutMode == 0)
+    {
+        DBG("[Binaural] Trial src=" << juce::String(targetAzimuthDeg, 1) << " deg"
+            << " | mode=Direct HRTF -> nearest HRIR @ "
+            << juce::String(vbap::wrap360(targetAzimuthDeg), 1) << " deg");
+        return;
+    }
+
+    static const char* const layoutNames[] = {
+        "Direct HRTF", "VBAP 9", "VBAP 12", "VBAP 18", "VBAP 36"
+    };
+    const juce::String layoutName = (layoutMode >= 0 && layoutMode <= 4)
+        ? layoutNames[layoutMode] : "VBAP ?";
+
+    std::array<float, kMaxSpeakers> spk{};
+    int n = 0;
+    fillSpeakerAnglesForLayout(layoutMode, topology, spk, n);
+
+    const auto pair = findActivePair(targetAzimuthDeg, spk, n);
+
+    DBG("[Binaural] Trial src=" << juce::String(targetAzimuthDeg, 1) << " deg"
+        << " | " << layoutName << " " << topologyName
+        << " -> spkA=" << juce::String(pair.azimuthA, 0)
+        << " (gA=" << juce::String(pair.gainA, 3) << ")"
+        << "  spkB=" << juce::String(pair.azimuthB, 0)
+        << " (gB=" << juce::String(pair.gainB, 3) << ")");
+}
+
+//==============================================================================
+bool AudioPluginAudioProcessor::hasEditor() const {
+    return true;
 }
 
 juce::AudioProcessorEditor* AudioPluginAudioProcessor::createEditor()
@@ -475,7 +549,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout
 AudioPluginAudioProcessor::createParameterLayout()
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
-    params.reserve(3);
+    params.reserve(4);
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         "inputGain",
@@ -489,17 +563,23 @@ AudioPluginAudioProcessor::createParameterLayout()
         juce::NormalisableRange<float>(0.0f, 360.0f, 0.01f),
         0.0f));
 
-        params.push_back(std::make_unique<juce::AudioParameterChoice>(
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
         "layoutMode",
         "Layout Mode",
         juce::StringArray{
-            "Direct HRTF (1 deg)",
-            "VBAP 9 speakers (40 deg)",
-            "VBAP 12 speakers (30 deg)",
-            "VBAP 18 speakers (20 deg)",
-            "VBAP 36 speakers (10 deg)"
+            "Direct HRTF",
+            "VBAP 9 speakers",
+            "VBAP 12 speakers",
+            "VBAP 18 speakers",
+            "VBAP 36 speakers"
         },
         4));
+
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        "topology",
+        "Topology",
+        juce::StringArray{ "Symmetric", "Asymmetric" },
+        0));
 
     return { params.begin(), params.end() };
 }
