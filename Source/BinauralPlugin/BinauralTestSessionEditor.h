@@ -27,16 +27,16 @@ private:
     static constexpr juce::uint32 colSurface2 = 0xFF252B35;
     static constexpr juce::uint32 colBorder = 0xFF2E3540;
     static constexpr juce::uint32 colText = 0xFFE6E8EC;
-    static constexpr juce::uint32 colMuted = 0xFFE6E8EC;
+    static constexpr juce::uint32 colMuted = 0xFF9098A4;   // ← FIXED was same as colText
     static constexpr juce::uint32 colHint = 0xFF5F6673;
-    static constexpr juce::uint32 colAccent = 0xFF32A2FF;
-    static constexpr juce::uint32 colAccentSub = 0xFF1E3A5F;
+    static constexpr juce::uint32 colAccent = 0xFF4A75B5;   // was 0xFF32A2FF
+    static constexpr juce::uint32 colAccentSub = 0xFF243D60;   // was 0xFF1E3A5F
     static constexpr juce::uint32 colGreen = 0xFF10B981;
     static constexpr juce::uint32 colOrange = 0xFFFF7652;
     static constexpr juce::uint32 colRed = 0xFFEF4444;
 
     //==========================================================================
-    //  DarkLookAndFeel — private nested class for use by this editor only
+    //  DarkLookAndFeel
     //==========================================================================
     class DarkLookAndFeel : public juce::LookAndFeel_V4
     {
@@ -45,8 +45,7 @@ private:
         {
             setColour(juce::ResizableWindow::backgroundColourId, juce::Colour(colBg));
 
-            // TextEditor
-            setColour(juce::TextEditor::backgroundColourId, juce::Colour(colSurface));
+            setColour(juce::TextEditor::backgroundColourId, juce::Colour(colSurface2));
             setColour(juce::TextEditor::textColourId, juce::Colour(colText));
             setColour(juce::TextEditor::highlightColourId, juce::Colour(colAccent).withAlpha(0.35f));
             setColour(juce::TextEditor::highlightedTextColourId, juce::Colour(colText));
@@ -54,26 +53,22 @@ private:
             setColour(juce::TextEditor::focusedOutlineColourId, juce::Colour(colAccent));
             setColour(juce::CaretComponent::caretColourId, juce::Colour(colAccent));
 
-            // ComboBox
-            setColour(juce::ComboBox::backgroundColourId, juce::Colour(colSurface));
+            setColour(juce::ComboBox::backgroundColourId, juce::Colour(colSurface2));
             setColour(juce::ComboBox::textColourId, juce::Colour(colText));
             setColour(juce::ComboBox::outlineColourId, juce::Colour(colBorder));
             setColour(juce::ComboBox::arrowColourId, juce::Colour(colMuted));
-            setColour(juce::ComboBox::buttonColourId, juce::Colour(colSurface));
+            setColour(juce::ComboBox::buttonColourId, juce::Colour(colSurface2));
             setColour(juce::ComboBox::focusedOutlineColourId, juce::Colour(colAccent));
 
-            // PopupMenu
             setColour(juce::PopupMenu::backgroundColourId, juce::Colour(colSurface));
             setColour(juce::PopupMenu::textColourId, juce::Colour(colText));
             setColour(juce::PopupMenu::highlightedBackgroundColourId, juce::Colour(colAccentSub));
             setColour(juce::PopupMenu::highlightedTextColourId, juce::Colour(colText));
 
-            // Label
             setColour(juce::Label::textColourId, juce::Colour(colText));
             setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);
 
-            // TextButton (default)
-            setColour(juce::TextButton::buttonColourId, juce::Colour(colSurface));
+            setColour(juce::TextButton::buttonColourId, juce::Colour(colSurface2));
             setColour(juce::TextButton::buttonOnColourId, juce::Colour(colAccentSub));
             setColour(juce::TextButton::textColourOffId, juce::Colour(colText));
             setColour(juce::TextButton::textColourOnId, juce::Colour(colAccent));
@@ -108,9 +103,7 @@ private:
         }
 
         void drawComboBox(juce::Graphics& g, int width, int height,
-            bool /*isButtonDown*/,
-            int /*buttonX*/, int /*buttonY*/, int /*buttonW*/, int /*buttonH*/,
-            juce::ComboBox& box) override
+            bool, int, int, int, int, juce::ComboBox& box) override
         {
             const auto bounds = juce::Rectangle<float>(0, 0, (float)width, (float)height).reduced(0.5f);
             const float cornerSize = 8.0f;
@@ -136,25 +129,20 @@ private:
             juce::TextEditor& te) override
         {
             const auto bounds = juce::Rectangle<float>(0, 0, (float)width, (float)height).reduced(0.5f);
-            const float cornerSize = 8.0f;
-
             g.setColour(te.hasKeyboardFocus(true)
                 ? te.findColour(juce::TextEditor::focusedOutlineColourId)
                 : te.findColour(juce::TextEditor::outlineColourId));
-            g.drawRoundedRectangle(bounds, cornerSize, 1.0f);
+            g.drawRoundedRectangle(bounds, 8.0f, 1.0f);
         }
 
         void fillTextEditorBackground(juce::Graphics& g, int width, int height,
             juce::TextEditor& te) override
         {
-            const auto bounds = juce::Rectangle<float>(0, 0, (float)width, (float)height);
             g.setColour(te.findColour(juce::TextEditor::backgroundColourId));
-            g.fillRoundedRectangle(bounds, 8.0f);
+            g.fillRoundedRectangle(juce::Rectangle<float>(0, 0, (float)width, (float)height), 8.0f);
         }
     };
 
-    //==========================================================================
-    //  Members
     //==========================================================================
     AudioPluginAudioProcessor& processorRef;
     TestSession session;
@@ -185,19 +173,20 @@ private:
         confBtn4{ "4" }, confBtn5{ "5" };
 
     // Feedback / summary
-    juce::TextButton nextBtn    { "Next trial" };
-    juce::TextButton saveBtn    { "Save CSV" };
-    juce::TextButton newSessBtn { "New session" };
-    juce::TextButton endSessBtn { "End session" };
+    juce::TextButton nextBtn{ "Next trial" };
+    juce::TextButton saveBtn{ "Save CSV" };
+    juce::TextButton newSessBtn{ "New session" };
+    juce::TextButton endSessBtn{ "End session" };
 
     // Geometry
     float circCx = 0, circCy = 0, circR = 0;
     juce::Rectangle<float> circBounds;
 
-    // Card rectangles for setup screen (recomputed in resized())
+    // Card rectangles for setup screen
     juce::Rectangle<int> cardSession;
     juce::Rectangle<int> cardRendering;
     juce::Rectangle<int> cardTrials;
+    juce::Rectangle<int> cardAudio;          // ← NEW
 
     void showSetupWidgets(bool);
     void showTrialWidgets(bool);
@@ -230,6 +219,7 @@ private:
     void paintSummary(juce::Graphics& g);
 
     void paintCard(juce::Graphics& g, juce::Rectangle<int> r, const juce::String& title);
+    void paintMiniLabel(juce::Graphics& g, int x, int y, int w, const juce::String& text);  // ← NEW
     void paintProgressBar(juce::Graphics& g, int y, float pct);
 
     void drawCircle(juce::Graphics& g, float cx, float cy, float r,
