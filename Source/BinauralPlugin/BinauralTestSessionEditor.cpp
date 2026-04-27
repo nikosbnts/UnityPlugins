@@ -4,20 +4,20 @@
 //==============================================================================
 //  Layout constants
 //==============================================================================
-static constexpr int kEditorW = 640;
-static constexpr int kEditorH = 760;
+static constexpr int kEditorW = 660;
+static constexpr int kEditorH = 860;
 
 static constexpr int kPad = 22;   // outer padding
-static constexpr int kFieldH = 36;   // input fields
-static constexpr int kCardPad = 16;   // padding inside cards
-static constexpr int kCardGap = 12;   // between cards
+static constexpr int kFieldH = 40;   // input fields
+static constexpr int kCardPad = 20;   // padding inside cards
+static constexpr int kCardGap = 16;   // between cards
 
-static constexpr int kCtH = 14;   // section title row (uppercase)
+static constexpr int kCtH = 16;   // section title row (uppercase)
 static constexpr int kCtGap = 10;   // gap from section title to first row
-static constexpr int kLblH = 14;   // mini label row
-static constexpr int kLblGap = 4;    // gap from mini label to its field
-static constexpr int kHintH = 14;   // hint text row
-static constexpr int kHintGap = 4;    // gap from field to hint
+static constexpr int kLblH = 17;   // mini label row
+static constexpr int kLblGap = 5;    // gap from mini label to its field
+static constexpr int kHintH = 16;   // hint text row
+static constexpr int kHintGap = 5;    // gap from field to hint
 
 //==============================================================================
 BinauralTestSessionEditor::BinauralTestSessionEditor(AudioPluginAudioProcessor& p)
@@ -67,17 +67,16 @@ BinauralTestSessionEditor::BinauralTestSessionEditor(AudioPluginAudioProcessor& 
     styleAccentButton(startBtn);
 
     audioFileLabel.setText("No audio file (use DAW input)", juce::dontSendNotification);
-    audioFileLabel.setFont(juce::Font(juce::FontOptions(13.0f)));
+    audioFileLabel.setFont(juce::Font(juce::FontOptions(14.0f)));
     audioFileLabel.setColour(juce::Label::textColourId, juce::Colour(colHint));
     addChildComponent(audioFileLabel);
 
     // ── Trial widgets ───────────────────────────────────────
     playBtn.onClick = [this] { onPlay(); };
-    stopBtn.onClick = [this] { onStop(); };
     submitBtn.onClick = [this] { onSubmit(); };
     addChildComponent(playBtn);
-    addChildComponent(stopBtn);
     addChildComponent(submitBtn);
+    stylePlayButton(false);
     styleAccentButton(submitBtn);
 
     confBtn1.onClick = [this] { onConfidence(1); };
@@ -124,9 +123,15 @@ BinauralTestSessionEditor::~BinauralTestSessionEditor()
 void BinauralTestSessionEditor::timerCallback()
 {
     if (processorRef.audioPlayer.isPlaying())
-        playBtn.setButtonText("Playing...");
+    {
+        playBtn.setButtonText("Stop");
+        stylePlayButton(true);
+    }
     else
+    {
         playBtn.setButtonText("Play");
+        stylePlayButton(false);
+    }
 }
 
 //==============================================================================
@@ -137,6 +142,14 @@ void BinauralTestSessionEditor::styleAccentButton(juce::TextButton& btn)
     btn.setColour(juce::TextButton::buttonColourId, juce::Colour(colAccent));
     btn.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     btn.setColour(juce::TextButton::textColourOnId, juce::Colours::white);
+}
+
+void BinauralTestSessionEditor::stylePlayButton(bool isStop)
+{
+    playBtn.setColour(juce::TextButton::buttonColourId,
+        juce::Colour(isStop ? colRed : colGreen));
+    playBtn.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    playBtn.setColour(juce::TextButton::textColourOnId,  juce::Colours::white);
 }
 
 void BinauralTestSessionEditor::styleConfidenceButton(juce::TextButton& btn, bool selected)
@@ -181,7 +194,6 @@ void BinauralTestSessionEditor::showSetupWidgets(bool v)
 void BinauralTestSessionEditor::showTrialWidgets(bool v)
 {
     playBtn.setVisible(v);
-    stopBtn.setVisible(v);
     submitBtn.setVisible(v);
     confBtn1.setVisible(v);
     confBtn2.setVisible(v);
@@ -327,14 +339,16 @@ void BinauralTestSessionEditor::onStart()
 
 void BinauralTestSessionEditor::onPlay()
 {
-    if (session.useInternalAudio && processorRef.audioPlayer.isLoaded())
+    if (processorRef.audioPlayer.isPlaying())
+    {
+        processorRef.audioPlayer.stop();
+    }
+    else if (session.useInternalAudio && processorRef.audioPlayer.isLoaded())
     {
         processorRef.audioPlayer.setLooping(true);
         processorRef.audioPlayer.play();
     }
 }
-
-void BinauralTestSessionEditor::onStop() { processorRef.audioPlayer.stop(); }
 
 void BinauralTestSessionEditor::onConfidence(int level)
 {
@@ -467,7 +481,7 @@ void BinauralTestSessionEditor::resized()
     //----------------------------------------------------------------
     // Setup screen — four cards
     //----------------------------------------------------------------
-    int y = 56;  // room for "Session setup" title
+    int y = 68;  // room for "Session setup" title
 
     // Card 1: SESSION
     {
@@ -503,7 +517,7 @@ void BinauralTestSessionEditor::resized()
 
     // Card 3: TRIALS
     {
-        const int textareaH = 56;
+        const int textareaH = 72;
         const int innerH = kCtH + kCtGap + kLblH + kLblGap + textareaH
             + kHintGap + kHintH + 14
             + kLblH + kLblGap + kFieldH;
@@ -544,44 +558,37 @@ void BinauralTestSessionEditor::resized()
     }
 
     // Start button — pinned to bottom for muscle-memory
-    startBtn.setBounds(kPad, H - kPad - 44, W - 2 * kPad, 44);
+    startBtn.setBounds(kPad, H - kPad - 50, W - 2 * kPad, 50);
 
     //----------------------------------------------------------------
     // Trial / Feedback geometry
     //----------------------------------------------------------------
-    circR = 130.0f;
+    circR = 155.0f;
     circCx = W * 0.5f;
-    circCy = 290.0f;
+    circCy = 280.0f;
     circBounds = juce::Rectangle<float>(circCx - circR - 30, circCy - circR - 30,
         (circR + 30) * 2, (circR + 30) * 2);
 
-    int trialY = static_cast<int>(circCy + circR) + 60;
-
-    // Play / Stop centered below circle
-    {
-        const int playW = 100;
-        const int playGap = 10;
-        const int totalW = 2 * playW + playGap;
-        const int playX = (W - totalW) / 2;
-        playBtn.setBounds(playX, trialY, playW, kFieldH);
-        stopBtn.setBounds(playX + playW + playGap, trialY, playW, kFieldH);
-    }
-
-    // Confidence buttons
-    const int confW = 48;
+    // Confidence button dimensions — defined early so play button can align with them
+    const int confW = 60;
     const int confGap = 10;
     const int confTotalW = 5 * confW + 4 * confGap;
     const int confX = (W - confTotalW) / 2;
 
-    trialY += kFieldH + 32;
+    int trialY = static_cast<int>(circCy + circR) + 66;
+
+    // Play/stop toggle — centred, same width as the confidence row below it
+    playBtn.setBounds(confX, trialY, confTotalW, kFieldH);
+
+    trialY += kFieldH + 42;
     confBtn1.setBounds(confX, trialY, confW, confW);
     confBtn2.setBounds(confX + 1 * (confW + confGap), trialY, confW, confW);
     confBtn3.setBounds(confX + 2 * (confW + confGap), trialY, confW, confW);
     confBtn4.setBounds(confX + 3 * (confW + confGap), trialY, confW, confW);
     confBtn5.setBounds(confX + 4 * (confW + confGap), trialY, confW, confW);
 
-    trialY += confW + 30;
-    submitBtn.setBounds(kPad, trialY, W - 2 * kPad, 44);
+    trialY += confW + 82;
+    submitBtn.setBounds(kPad, trialY, W - 2 * kPad, 48);
 
     // End session — small, top-right of trial/feedback
     endSessBtn.setBounds(W - kPad - 110, 12, 110, 26);
@@ -620,7 +627,7 @@ void BinauralTestSessionEditor::paintCard(juce::Graphics& g, juce::Rectangle<int
 
     // Card title — small, uppercase, hint-colour
     g.setColour(juce::Colour(colHint));
-    g.setFont(juce::Font(juce::FontOptions(11.0f, juce::Font::bold)));
+    g.setFont(juce::Font(juce::FontOptions(13.0f, juce::Font::bold)));
     g.drawText(title.toUpperCase(),
         r.getX() + kCardPad,
         r.getY() + kCardPad,
@@ -632,7 +639,7 @@ void BinauralTestSessionEditor::paintMiniLabel(juce::Graphics& g, int x, int y, 
     const juce::String& text)
 {
     g.setColour(juce::Colour(colMuted));
-    g.setFont(juce::Font(juce::FontOptions(12.0f)));
+    g.setFont(juce::Font(juce::FontOptions(14.0f)));
     g.drawText(text, x, y, w, kLblH, juce::Justification::centredLeft);
 }
 
@@ -654,8 +661,8 @@ void BinauralTestSessionEditor::paintSetup(juce::Graphics& g)
 {
     // Title
     g.setColour(juce::Colour(colText));
-    g.setFont(juce::Font(juce::FontOptions(20.0f, juce::Font::bold)));
-    g.drawText("Session setup", kPad, 20, getWidth() - 2 * kPad, 28,
+    g.setFont(juce::Font(juce::FontOptions(22.0f, juce::Font::bold)));
+    g.drawText("Session setup", kPad, 20, getWidth() - 2 * kPad, 32,
         juce::Justification::centredLeft);
 
     // Card 1: Session
@@ -672,7 +679,7 @@ void BinauralTestSessionEditor::paintSetup(juce::Graphics& g)
 
     // Hint about topology applicability
     g.setColour(juce::Colour(colHint));
-    g.setFont(juce::Font(juce::FontOptions(11.0f)));
+    g.setFont(juce::Font(juce::FontOptions(14.0f)));
     g.drawText("Topology applies to VBAP 9, 12 and 18 layouts.",
         layoutBox.getX(),
         layoutBox.getBottom() + 8,
@@ -685,7 +692,7 @@ void BinauralTestSessionEditor::paintSetup(juce::Graphics& g)
         anglesEditor.getWidth(), "Source angles (degrees, 0-360)");
 
     g.setColour(juce::Colour(colHint));
-    g.setFont(juce::Font(juce::FontOptions(11.0f)));
+    g.setFont(juce::Font(juce::FontOptions(14.0f)));
     g.drawText(juce::String::fromUTF8("0 = front  \xc2\xb7  90 = right  \xc2\xb7  180 = back  \xc2\xb7  270 = left"),
         anglesEditor.getX(),
         anglesEditor.getBottom() + kHintGap,
@@ -722,36 +729,50 @@ void BinauralTestSessionEditor::paintTrial(juce::Graphics& g)
 
     paintProgressBar(g, 44, pct);
 
-    g.setFont(juce::Font(juce::FontOptions(14.0f)));
-    g.setColour(juce::Colour(colMuted));
+    g.setFont(juce::Font(juce::FontOptions(15.0f)));
+    g.setColour(juce::Colour(colText));
     g.drawText("Listen to the sound, then click where you think it came from",
-        kPad, 60, W - 2 * kPad, 22, juce::Justification::centred);
+        kPad, 52, W - 2 * kPad, 22, juce::Justification::centred);
 
     drawCircle(g, circCx, circCy, circR, session.userResponse, -1.0f, true);
 
-    const float textY = circCy + circR + 24;
-    g.setFont(juce::Font(juce::FontOptions(15.0f, juce::Font::bold)));
-    g.setColour(session.userResponse >= 0 ? juce::Colour(colText) : juce::Colour(colMuted));
-    juce::String selText = session.userResponse >= 0
-        ? "Selected: " + juce::String(static_cast<int>(session.userResponse))
-        + juce::String::fromUTF8("\xc2\xb0")
-        : "Click circle to select angle";
-    g.drawText(selText, kPad, static_cast<int>(textY), W - 2 * kPad, 22,
-        juce::Justification::centred);
+    const float textY = circCy + circR + 32;
+    if (session.userResponse >= 0)
+    {
+        g.setFont(juce::Font(juce::FontOptions(18.0f, juce::Font::bold)));
+        g.setColour(juce::Colour(colText));
+        g.drawText("Selected: " + juce::String(static_cast<int>(session.userResponse))
+            + juce::String::fromUTF8("\xc2\xb0"),
+            kPad, static_cast<int>(textY), W - 2 * kPad, 24,
+            juce::Justification::centred);
+    }
+    else
+    {
+        g.setFont(juce::Font(juce::FontOptions(14.0f)));
+        g.setColour(juce::Colour(colMuted));
+        g.drawText("Click circle to select angle",
+            kPad, static_cast<int>(textY), W - 2 * kPad, 24,
+            juce::Justification::centred);
+    }
 
-    int confLabelY = confBtn1.getY() - 22;
-    g.setFont(juce::Font(juce::FontOptions(13.0f, juce::Font::bold)));
+    int confLabelY = confBtn1.getY() - 24;
+    g.setFont(juce::Font(juce::FontOptions(14.0f, juce::Font::bold)));
     g.setColour(juce::Colour(colMuted));
     g.drawText("CONFIDENCE", kPad, confLabelY, W - 2 * kPad, 18,
         juce::Justification::centred);
 
-    int confBtnBottom = confBtn1.getBottom() + 6;
+    int confBtnBottom = confBtn1.getBottom() + 8;
     g.setFont(juce::Font(juce::FontOptions(12.0f)));
     g.setColour(juce::Colour(colHint));
     g.drawText("Not sure", confBtn1.getX(), confBtnBottom, 120, 16,
         juce::Justification::centredLeft);
     g.drawText("Very sure", confBtn5.getRight() - 120, confBtnBottom, 120, 16,
         juce::Justification::centredRight);
+
+    // Subtle separator between confidence and submit
+    const float sepY = submitBtn.getY() - 28.0f;
+    g.setColour(juce::Colour(colBorder));
+    g.drawLine((float)kPad, sepY, (float)(W - kPad), sepY, 1.0f);
 }
 
 void BinauralTestSessionEditor::paintFeedback(juce::Graphics& g)
@@ -905,7 +926,7 @@ juce::Point<float> BinauralTestSessionEditor::angleToPt(float deg, float r, floa
 
 void BinauralTestSessionEditor::drawCircle(juce::Graphics& g,
     float cx, float cy, float r,
-    float userAngle, float actualAngle, bool)
+    float userAngle, float actualAngle, bool /*interactive*/)
 {
     g.setColour(juce::Colour(colBorder));
     g.drawEllipse(cx - r, cy - r, r * 2, r * 2, 1.5f);
@@ -927,26 +948,26 @@ void BinauralTestSessionEditor::drawCircle(juce::Graphics& g,
         g.drawLine(p1.x, p1.y, p2.x, p2.y, major ? 1.5f : 0.75f);
     }
 
-    g.setFont(juce::Font(juce::FontOptions("Courier New", 13.0f, juce::Font::plain)));
+    g.setFont(juce::Font(juce::FontOptions("Courier New", 15.0f, juce::Font::plain)));
     g.setColour(juce::Colour(colMuted));
     const char* degLabels[] = { "0", "90", "180", "270" };
     float degAngles[] = { 0, 90, 180, 270 };
     for (int i = 0; i < 4; ++i)
     {
-        auto pt = angleToPt(degAngles[i], r + 18.0f, cx, cy);
+        auto pt = angleToPt(degAngles[i], r + 22.0f, cx, cy);
         g.drawText(juce::String(degLabels[i]),
-            static_cast<int>(pt.x - 20), static_cast<int>(pt.y - 8), 40, 16,
+            static_cast<int>(pt.x - 25), static_cast<int>(pt.y - 10), 50, 20,
             juce::Justification::centred);
     }
 
-    g.setFont(juce::Font(juce::FontOptions(12.0f)));
+    g.setFont(juce::Font(juce::FontOptions(14.0f)));
     g.setColour(juce::Colour(colHint));
     const char* dirLabels[] = { "Front", "Right", "Back", "Left" };
     for (int i = 0; i < 4; ++i)
     {
-        auto pt = angleToPt(degAngles[i], r - 30.0f, cx, cy);
+        auto pt = angleToPt(degAngles[i], r - 34.0f, cx, cy);
         g.drawText(dirLabels[i],
-            static_cast<int>(pt.x - 24), static_cast<int>(pt.y - 8), 48, 16,
+            static_cast<int>(pt.x - 26), static_cast<int>(pt.y - 9), 52, 18,
             juce::Justification::centred);
     }
 

@@ -4,6 +4,8 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
+#include <limits>
+#include <numbers>
 
 namespace vbap
 {
@@ -33,7 +35,7 @@ namespace vbap
 
     inline Vec2 azToDir(float azDeg360) noexcept
     {
-        constexpr float degToRad = 3.14159265358979323846f / 180.0f;
+        constexpr float degToRad = std::numbers::pi_v<float> / 180.0f;
         const float r = azDeg360 * degToRad;
         return { std::sin(r), std::cos(r) };
     }
@@ -138,7 +140,7 @@ namespace vbap
         }
 
         int nearest = 0;
-        float best = 999999.0f;
+        float best = std::numeric_limits<float>::max();
 
         for (int i = 0; i < n; ++i)
         {

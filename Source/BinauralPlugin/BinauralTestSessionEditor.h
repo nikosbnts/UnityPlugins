@@ -167,7 +167,6 @@ private:
 
     // Trial widgets
     juce::TextButton playBtn{ "Play" };
-    juce::TextButton stopBtn{ "Stop" };
     juce::TextButton submitBtn{ "Submit answer" };
     juce::TextButton confBtn1{ "1" }, confBtn2{ "2" }, confBtn3{ "3" },
         confBtn4{ "4" }, confBtn5{ "5" };
@@ -200,7 +199,6 @@ private:
     void onLoadAudio();
     void onStart();
     void onPlay();
-    void onStop();
     void onConfidence(int level);
     void onSubmit();
     void onNext();
@@ -210,6 +208,7 @@ private:
 
     void styleConfidenceButton(juce::TextButton& btn, bool selected);
     void styleAccentButton(juce::TextButton& btn);
+    void stylePlayButton(bool isStop);
 
     void syncParametersToProcessor();
 

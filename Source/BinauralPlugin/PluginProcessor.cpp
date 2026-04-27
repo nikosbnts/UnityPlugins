@@ -65,6 +65,18 @@ bool AudioPluginAudioProcessor::isBusesLayoutSupported(const BusesLayout& layout
 
 juce::File AudioPluginAudioProcessor::getDefaultHrirFolder() const
 {
+    // Primary: look in Documents/BinauralPlugin/HRIR/48K_24bit_0ele
+    // (copy the HRIR folder there to run on any machine)
+    const auto docsCandidate = juce::File::getSpecialLocation(
+        juce::File::userDocumentsDirectory)
+        .getChildFile("BinauralPlugin")
+        .getChildFile("HRIR")
+        .getChildFile("48K_24bit_0ele");
+
+    if (docsCandidate.isDirectory())
+        return docsCandidate;
+
+    // Fallback: original developer path
     return juce::File("C:/Users/nikos/Desktop/Diplomatiki/JucePlugins/Assets/0ele/48K_24bit_0ele");
 }
 
@@ -95,15 +107,16 @@ void AudioPluginAudioProcessor::fillSpeakerAnglesForLayout(int layoutMode,
 {
     // Asymmetric topologies (front/back denser, sides sparser).
     static constexpr float asym9[] = {
-        0.0f, 30.0f, 60.0f, 90.0f, 135.0f, 180.0f, 225.0f, 270.0f, 300.0f
+        0.0f, 30.0f, 60.0f, 100.0f, 150.0f, 210.0f, 260.0f, 300.0f, 330.0f
     };
     static constexpr float asym12[] = {
-        0.0f, 20.0f, 40.0f, 60.0f, 90.0f, 120.0f,
-        160.0f, 180.0f, 200.0f, 240.0f, 280.0f, 320.0f
+        0.0f, 22.0f, 45.0f, 75.0f, 100.0f, 135.0f,
+        180.0f, 225.0f, 260.0f, 285.0f, 315.0f, 338.0f
     };
     static constexpr float asym18[] = {
-        0.0f, 15.0f, 30.0f, 60.0f, 75.0f, 90.0f, 105.0f, 135.0f, 165.0f,
-        180.0f, 195.0f, 225.0f, 255.0f, 270.0f, 285.0f, 300.0f, 330.0f, 345.0f
+        0.0f,   12.0f,  25.0f,  40.0f,  55.0f,  70.0f,   
+        90.0f,  115.0f, 145.0f, 180.0f, 215.0f, 245.0f,  
+        270.0f, 290.0f, 305.0f, 320.0f, 335.0f, 348.0f   
     };
 
     int symCount = 36;
