@@ -12,6 +12,7 @@ struct TrialResult
     float responseAngle = 0.0f;
     float angularError = 0.0f;
     int confidence = 0;
+    juce::String configName;
     juce::String timestamp;
 };
 
@@ -24,6 +25,7 @@ struct TestSession
     juce::String setupLabel = "-";
 
     std::vector<float> targetAngles;
+    std::vector<juce::String> trialConfigs;  // parallel to targetAngles, one config name per trial
     std::vector<TrialResult> results;
     int currentTrial = 0;
 
@@ -42,8 +44,10 @@ struct TestSession
     void reset()
     {
         screen = Screen::Setup;
-        setupLabel = "-";
+        setupLabel = "";
         results.clear();
+        targetAngles.clear();
+        trialConfigs.clear();
         currentTrial = 0;
         userResponse = -1.0f;
         userConfidence = 0;
@@ -65,6 +69,9 @@ struct TestSession
         r.responseAngle = userResponse;
         r.angularError = angularError(r.targetAngle, r.responseAngle);
         r.confidence = userConfidence;
+        r.configName = (currentTrial < static_cast<int>(trialConfigs.size()))
+                           ? trialConfigs[static_cast<size_t>(currentTrial)]
+                           : juce::String{};
         r.timestamp = juce::Time::getCurrentTime().toISO8601(true);
         results.push_back(r);
 
@@ -143,7 +150,7 @@ struct TestSession
         juce::String csv;
 
         csv << "Session Name" << sep << escapeForCSV(sessionName, sep) << "\n";
-        csv << "Setup"        << sep << escapeForCSV(setupLabel, sep) << "\n";
+        csv << "Participant ID" << sep << escapeForCSV(setupLabel, sep) << "\n";
         csv << "Audio Source" << sep << (useInternalAudio ? "Internal file" : "DAW input") << "\n";
         csv << "Audio File"   << sep
             << escapeForCSV(audioFilePath.isNotEmpty() ? audioFilePath : "-", sep) << "\n";
@@ -151,6 +158,7 @@ struct TestSession
         csv << "\n";
 
         csv << "Trial" << sep
+            << "Configuration" << sep
             << "TargetAngle" << sep
             << "ResponseAngle" << sep
             << "AngularError" << sep
@@ -160,6 +168,7 @@ struct TestSession
         for (const auto& r : results)
         {
             csv << juce::String(r.trialNumber) << sep
+                << escapeForCSV(r.configName, sep) << sep
                 << numberForExcel(r.targetAngle) << sep
                 << numberForExcel(r.responseAngle) << sep
                 << numberForExcel(r.angularError) << sep

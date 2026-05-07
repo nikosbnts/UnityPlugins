@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\nikos\\\\Desktop\\\\Diplomatiki\\\\JucePlugins\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Sort-Object)",
+      "Bash(dir \"C:\\\\Users\\\\nikos\\\\Desktop\\\\Diplomatiki\\\\JucePlugins\\\\Assets\\\\0ele\\\\48K_24bit_0ele\")",
+      "Bash(dir \"C:\\\\Users\\\\nikos\\\\Desktop\\\\Diplomatiki\\\\JucePlugins\\\\Assets\" /s /b)",
+      "Bash(findstr /i \"readme\\\\|txt\\\\|pdf\\\\|info\\\\|meta\")"
+    ]
+  }
+}
