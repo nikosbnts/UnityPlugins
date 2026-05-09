@@ -8,7 +8,7 @@ class HrirBank
 public:
     struct Entry
     {
-        int azimuthDeg = 0;              // 0, 1, 2, ... 359
+        int azimuthDeg = 0;              // 0, 1, 2, ... 359.
         juce::AudioBuffer<float> ir;     // ch0 = left ear, ch1 = right ear
         double sampleRate = 0.0;
     };

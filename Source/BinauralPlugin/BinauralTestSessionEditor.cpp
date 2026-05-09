@@ -412,31 +412,28 @@ void BinauralTestSessionEditor::confirmAndLoadPreset(std::function<void()> loade
         }));
 }
 
-void BinauralTestSessionEditor::onLoadPreset()   { confirmAndLoadPreset([this] { loadRPreset();  }, "R test (31 trials)");   }
-void BinauralTestSessionEditor::onLoadLPreset()  { confirmAndLoadPreset([this] { loadLPreset();  }, "L test (31 trials)");   }
-void BinauralTestSessionEditor::onLoadLRPreset() { confirmAndLoadPreset([this] { loadLRPreset(); }, "L+R test (31 trials)"); }
+void BinauralTestSessionEditor::onLoadPreset()   { confirmAndLoadPreset([this] { loadRPreset();  }, "R test (27 trials)");   }
+void BinauralTestSessionEditor::onLoadLPreset()  { confirmAndLoadPreset([this] { loadLPreset();  }, "L test (27 trials)");   }
+void BinauralTestSessionEditor::onLoadLRPreset() { confirmAndLoadPreset([this] { loadLRPreset(); }, "L+R test (28 trials)"); }
 
 void BinauralTestSessionEditor::loadRPreset()
 {
     struct P { float a; int lm, tp; const char* n; };
     static const P k[] = {
-        {  15.0f, 1, 0, "VBAP 5 Standard"  }, {  15.0f, 1, 1, "VBAP 5 Symmetrical"},
-        {  15.0f, 0, 0, "Direct HRTF"      },
-        {  30.0f, 1, 1, "VBAP 5 Symmetrical"}, {  30.0f, 0, 0, "Direct HRTF"      },
-        {  45.0f, 1, 0, "VBAP 5 Standard"  }, {  45.0f, 1, 1, "VBAP 5 Symmetrical"},
-        {  45.0f, 4, 1, "VBAP 12 Symmetrical"}, {  45.0f, 0, 0, "Direct HRTF"      },
-        {  75.0f, 1, 0, "VBAP 5 Standard"  }, {  75.0f, 2, 0, "VBAP 7 Standard"  },
-        {  75.0f, 1, 1, "VBAP 5 Symmetrical"}, {  75.0f, 4, 1, "VBAP 12 Symmetrical"},
-        {  75.0f, 0, 0, "Direct HRTF"      },
-        { 110.0f, 1, 0, "VBAP 5 Standard"  }, { 110.0f, 4, 1, "VBAP 12 Symmetrical"},
-        { 110.0f, 1, 1, "VBAP 5 Symmetrical"}, { 110.0f, 2, 0, "VBAP 7 Standard"  },
-        { 110.0f, 0, 0, "Direct HRTF"      },
-        { 120.0f, 2, 0, "VBAP 7 Standard"  }, { 120.0f, 0, 0, "Direct HRTF"      },
-        { 135.0f, 1, 0, "VBAP 5 Standard"  }, { 135.0f, 2, 0, "VBAP 7 Standard"  },
-        { 135.0f, 4, 1, "VBAP 12 Symmetrical"}, { 135.0f, 0, 0, "Direct HRTF"      },
-        { 150.0f, 1, 0, "VBAP 5 Standard"  }, { 150.0f, 0, 0, "Direct HRTF"      },
         { 165.0f, 1, 0, "VBAP 5 Standard"  }, { 165.0f, 2, 0, "VBAP 7 Standard"  },
         { 165.0f, 4, 1, "VBAP 12 Symmetrical"}, { 165.0f, 0, 0, "Direct HRTF"      },
+        { 150.0f, 1, 0, "VBAP 5 Standard"  }, { 150.0f, 0, 0, "Direct HRTF"      },
+        { 135.0f, 1, 0, "VBAP 5 Standard"  }, { 135.0f, 2, 0, "VBAP 7 Standard"  },
+        { 135.0f, 0, 0, "Direct HRTF"      }, { 120.0f, 0, 0, "Direct HRTF"      },
+        {  45.0f, 1, 0, "VBAP 5 Standard"  }, {  45.0f, 1, 1, "VBAP 5 Symmetrical"},
+        {  45.0f, 4, 1, "VBAP 12 Symmetrical"}, {  45.0f, 0, 0, "Direct HRTF"      },
+        {  75.0f, 1, 0, "VBAP 5 Standard"  }, {  75.0f, 1, 1, "VBAP 5 Symmetrical"},
+        {  75.0f, 4, 1, "VBAP 12 Symmetrical"}, {  75.0f, 0, 0, "Direct HRTF"      },
+        { 115.0f, 1, 0, "VBAP 5 Standard"  }, { 115.0f, 4, 1, "VBAP 12 Symmetrical"},
+        { 115.0f, 1, 1, "VBAP 5 Symmetrical"}, { 115.0f, 0, 0, "Direct HRTF"      },
+        {  15.0f, 1, 0, "VBAP 5 Standard"  }, {  15.0f, 1, 1, "VBAP 5 Symmetrical"},
+        {  15.0f, 0, 0, "Direct HRTF"      }, {  30.0f, 1, 1, "VBAP 5 Symmetrical"},
+        {  30.0f, 0, 0, "Direct HRTF"      },
     };
     researcherTrialList.clear();
     for (const auto& p : k) { TrialEntry e; e.angle=p.a; e.layoutMode=p.lm; e.topology=p.tp; e.displayName=p.n; researcherTrialList.push_back(e); }
@@ -451,19 +448,16 @@ void BinauralTestSessionEditor::loadLPreset()
         { 195.0f, 4, 1, "VBAP 12 Symmetrical"}, { 195.0f, 0, 0, "Direct HRTF"      },
         { 210.0f, 1, 0, "VBAP 5 Standard"  }, { 210.0f, 0, 0, "Direct HRTF"      },
         { 225.0f, 1, 0, "VBAP 5 Standard"  }, { 225.0f, 2, 0, "VBAP 7 Standard"  },
-        { 225.0f, 4, 1, "VBAP 12 Symmetrical"}, { 225.0f, 0, 0, "Direct HRTF"      },
-        { 240.0f, 2, 0, "VBAP 7 Standard"  }, { 240.0f, 0, 0, "Direct HRTF"      },
-        { 250.0f, 1, 0, "VBAP 5 Standard"  }, { 250.0f, 4, 1, "VBAP 12 Symmetrical"},
-        { 250.0f, 1, 1, "VBAP 5 Symmetrical"}, { 250.0f, 2, 0, "VBAP 7 Standard"  },
-        { 250.0f, 0, 0, "Direct HRTF"      },
-        { 285.0f, 1, 0, "VBAP 5 Standard"  }, { 285.0f, 2, 0, "VBAP 7 Standard"  },
-        { 285.0f, 1, 1, "VBAP 5 Symmetrical"}, { 285.0f, 4, 1, "VBAP 12 Symmetrical"},
-        { 285.0f, 0, 0, "Direct HRTF"      },
+        { 225.0f, 0, 0, "Direct HRTF"      }, { 240.0f, 0, 0, "Direct HRTF"      },
         { 315.0f, 1, 0, "VBAP 5 Standard"  }, { 315.0f, 1, 1, "VBAP 5 Symmetrical"},
         { 315.0f, 4, 1, "VBAP 12 Symmetrical"}, { 315.0f, 0, 0, "Direct HRTF"      },
-        { 330.0f, 1, 1, "VBAP 5 Symmetrical"}, { 330.0f, 0, 0, "Direct HRTF"      },
+        { 285.0f, 1, 0, "VBAP 5 Standard"  }, { 285.0f, 1, 1, "VBAP 5 Symmetrical"},
+        { 285.0f, 4, 1, "VBAP 12 Symmetrical"}, { 285.0f, 0, 0, "Direct HRTF"      },
+        { 245.0f, 1, 0, "VBAP 5 Standard"  }, { 245.0f, 4, 1, "VBAP 12 Symmetrical"},
+        { 245.0f, 1, 1, "VBAP 5 Symmetrical"}, { 245.0f, 0, 0, "Direct HRTF"      },
         { 345.0f, 1, 0, "VBAP 5 Standard"  }, { 345.0f, 1, 1, "VBAP 5 Symmetrical"},
-        { 345.0f, 0, 0, "Direct HRTF"      },
+        { 345.0f, 0, 0, "Direct HRTF"      }, { 330.0f, 1, 1, "VBAP 5 Symmetrical"},
+        { 330.0f, 0, 0, "Direct HRTF"      },
     };
     researcherTrialList.clear();
     for (const auto& p : k) { TrialEntry e; e.angle=p.a; e.layoutMode=p.lm; e.topology=p.tp; e.displayName=p.n; researcherTrialList.push_back(e); }
@@ -475,25 +469,23 @@ void BinauralTestSessionEditor::loadLRPreset()
     struct P { float a; int lm, tp; const char* n; };
     static const P k[] = {
         // Right side
-        {  15.0f, 1, 0, "VBAP 5 Standard"  }, {  15.0f, 0, 0, "Direct HRTF"      },
+        { 165.0f, 1, 0, "VBAP 5 Standard"  }, { 165.0f, 4, 1, "VBAP 12 Symmetrical"},
+        { 150.0f, 1, 0, "VBAP 5 Standard"  },
+        { 135.0f, 2, 0, "VBAP 7 Standard"  }, { 135.0f, 0, 0, "Direct HRTF"      },
+        { 120.0f, 0, 0, "Direct HRTF"      },
+        { 115.0f, 4, 1, "VBAP 12 Symmetrical"}, { 115.0f, 0, 0, "Direct HRTF"      },
+        {  75.0f, 1, 0, "VBAP 5 Standard"  }, {  75.0f, 1, 1, "VBAP 5 Symmetrical"},
+        {  45.0f, 1, 1, "VBAP 5 Symmetrical"}, {  45.0f, 0, 0, "Direct HRTF"      },
         {  30.0f, 1, 1, "VBAP 5 Symmetrical"},
-        {  45.0f, 1, 0, "VBAP 5 Standard"  }, {  45.0f, 0, 0, "Direct HRTF"      },
-        {  75.0f, 2, 0, "VBAP 7 Standard"  }, {  75.0f, 1, 1, "VBAP 5 Symmetrical"},
-        {  75.0f, 0, 0, "Direct HRTF"      },
-        { 110.0f, 1, 1, "VBAP 5 Symmetrical"}, { 110.0f, 4, 1, "VBAP 12 Symmetrical"},
-        { 120.0f, 2, 0, "VBAP 7 Standard"  },
-        { 135.0f, 1, 0, "VBAP 5 Standard"  }, { 135.0f, 4, 1, "VBAP 12 Symmetrical"},
-        { 150.0f, 0, 0, "Direct HRTF"      },
-        { 165.0f, 1, 0, "VBAP 5 Standard"  }, { 165.0f, 0, 0, "Direct HRTF"      },
-        // Left side (mirrored, 360 - angle)
-        { 195.0f, 2, 0, "VBAP 7 Standard"  }, { 195.0f, 4, 1, "VBAP 12 Symmetrical"},
-        { 210.0f, 1, 0, "VBAP 5 Standard"  },
-        { 225.0f, 2, 0, "VBAP 7 Standard"  }, { 225.0f, 0, 0, "Direct HRTF"      },
+        {  15.0f, 1, 0, "VBAP 5 Standard"  }, {  15.0f, 0, 0, "Direct HRTF"      },
+        // Left side (mirrored)
+        { 195.0f, 2, 0, "VBAP 7 Standard"  }, { 195.0f, 0, 0, "Direct HRTF"      },
+        { 210.0f, 0, 0, "Direct HRTF"      },
+        { 225.0f, 1, 0, "VBAP 5 Standard"  },
         { 240.0f, 0, 0, "Direct HRTF"      },
-        { 250.0f, 1, 0, "VBAP 5 Standard"  }, { 250.0f, 2, 0, "VBAP 7 Standard"  },
-        { 250.0f, 0, 0, "Direct HRTF"      },
-        { 285.0f, 1, 0, "VBAP 5 Standard"  }, { 285.0f, 4, 1, "VBAP 12 Symmetrical"},
-        { 315.0f, 1, 1, "VBAP 5 Symmetrical"}, { 315.0f, 4, 1, "VBAP 12 Symmetrical"},
+        { 245.0f, 1, 0, "VBAP 5 Standard"  }, { 245.0f, 1, 1, "VBAP 5 Symmetrical"},
+        { 285.0f, 4, 1, "VBAP 12 Symmetrical"}, { 285.0f, 0, 0, "Direct HRTF"      },
+        { 315.0f, 1, 0, "VBAP 5 Standard"  }, { 315.0f, 4, 1, "VBAP 12 Symmetrical"},
         { 330.0f, 0, 0, "Direct HRTF"      },
         { 345.0f, 1, 1, "VBAP 5 Symmetrical"},
     };
