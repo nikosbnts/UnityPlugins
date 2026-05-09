@@ -136,7 +136,7 @@ private:
         const char* label;
         bool        fullWidth;
     };
-    static const std::array<ChipConfig, 10> kChipConfigs;
+    static const std::array<ChipConfig, 9> kChipConfigs;
 
     //==========================================================================
     AudioPluginAudioProcessor& processorRef;
@@ -160,7 +160,7 @@ private:
 
     //-- Setup — researcher only
     juce::TextEditor angleEditor;
-    std::array<juce::TextButton, 10> chipBtns;
+    std::array<juce::TextButton, 9> chipBtns;
     juce::TextButton addTrialBtn      { "+ Add to trial list" };
     juce::TextButton loadPresetBtn   { "Load R test"  };
     juce::TextButton loadLPresetBtn  { "Load L test"  };
@@ -190,7 +190,7 @@ private:
     juce::Rectangle<int> cardTrialConfig;
 
     //-- Chip grid bounds (for layout in resized)
-    std::array<juce::Rectangle<int>, 10> chipBounds;
+    std::array<juce::Rectangle<int>, 9> chipBounds;
 
     //==========================================================================
     //  Visibility helpers

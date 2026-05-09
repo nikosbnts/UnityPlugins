@@ -20,18 +20,17 @@ static constexpr int kCardTitleH  = 20;  // 14px title + 6px gap before content
 //==============================================================================
 //  Chip configuration table
 //==============================================================================
-const std::array<BinauralTestSessionEditor::ChipConfig, 10>
+const std::array<BinauralTestSessionEditor::ChipConfig, 9>
     BinauralTestSessionEditor::kChipConfigs = {{
-        { 0, 0, "Direct HRTF",         true  },
-        { 1, 0, "VBAP 5 Standard",        false },   // Topology 1
-        { 1, 1, "VBAP 5 Symmetric",     false },   // Topology 2
-        { 2, 0, "VBAP 7 Standard",        false },   // Topology 1
-        { 2, 1, "VBAP 7 Symmetric",     false },   // Topology 2
-        { 3, 0, "VBAP 9 Symmetric",     false },   // Topology 1
-        { 3, 1, "VBAP 9 Asymmetric",    false },   // Topology 2
-        { 4, 0, "VBAP 12 Symmetric",    false },   // Topology 1
-        { 4, 1, "VBAP 12 Asymmetric",   false },   // Topology 2
-        { 5, 0, "VBAP 18",              true  },   // Topology 1 only
+        { 0, 0, "Direct HRTF",          true  },   // No topology
+        { 1, 0, "VBAP 5 Standard",      false },   // T1 = Standard
+        { 1, 1, "VBAP 5 Symmetrical",   false },   // T2 = Symmetrical
+        { 2, 0, "VBAP 7 Standard",      false },   // T1 = Standard
+        { 2, 1, "VBAP 7 Symmetrical",   false },   // T2 = Symmetrical
+        { 3, 0, "VBAP 9 Standard",      false },   // T1 = Standard
+        { 3, 1, "VBAP 9 Symmetrical",   false },   // T2 = Symmetrical
+        { 4, 1, "VBAP 12 Symmetrical",  true  },   // Symmetrical only
+        { 5, 1, "VBAP 18 Symmetrical",  true  },   // Symmetrical only
     }};
 
 //==============================================================================
@@ -126,7 +125,7 @@ BinauralTestSessionEditor::BinauralTestSessionEditor(AudioPluginAudioProcessor& 
     addChildComponent(angleEditor);
 
     // ── Chip buttons ─────────────────────────────────────────────────
-    for (int i = 0; i < 10; ++i)
+    for (int i = 0; i < static_cast<int>(kChipConfigs.size()); ++i)
     {
         chipBtns[i].setButtonText(kChipConfigs[i].label);
         chipBtns[i].setClickingTogglesState(true);
@@ -365,7 +364,7 @@ void BinauralTestSessionEditor::onAddTrial()
     angleEditor.setColour(juce::TextEditor::outlineColourId, juce::Colour(colBorder));
 
     bool anySelected = false;
-    for (int i = 0; i < 10; ++i)
+    for (int i = 0; i < static_cast<int>(kChipConfigs.size()); ++i)
     {
         if (chipBtns[i].getToggleState())
         {
@@ -413,28 +412,31 @@ void BinauralTestSessionEditor::confirmAndLoadPreset(std::function<void()> loade
         }));
 }
 
-void BinauralTestSessionEditor::onLoadPreset()   { confirmAndLoadPreset([this] { loadRPreset();  }, "R test (27 trials)");   }
-void BinauralTestSessionEditor::onLoadLPreset()  { confirmAndLoadPreset([this] { loadLPreset();  }, "L test (27 trials)");   }
-void BinauralTestSessionEditor::onLoadLRPreset() { confirmAndLoadPreset([this] { loadLRPreset(); }, "L+R test (28 trials)"); }
+void BinauralTestSessionEditor::onLoadPreset()   { confirmAndLoadPreset([this] { loadRPreset();  }, "R test (31 trials)");   }
+void BinauralTestSessionEditor::onLoadLPreset()  { confirmAndLoadPreset([this] { loadLPreset();  }, "L test (31 trials)");   }
+void BinauralTestSessionEditor::onLoadLRPreset() { confirmAndLoadPreset([this] { loadLRPreset(); }, "L+R test (31 trials)"); }
 
 void BinauralTestSessionEditor::loadRPreset()
 {
     struct P { float a; int lm, tp; const char* n; };
     static const P k[] = {
-        { 165.0f, 1, 0, "VBAP 5 Standard"  }, { 165.0f, 2, 0, "VBAP 7 Standard"  },
-        { 165.0f, 4, 0, "VBAP 12 Symmetric"}, { 165.0f, 0, 0, "Direct HRTF"      },
-        { 150.0f, 1, 0, "VBAP 5 Standard"  }, { 150.0f, 0, 0, "Direct HRTF"      },
+        {  15.0f, 1, 0, "VBAP 5 Standard"  }, {  15.0f, 1, 1, "VBAP 5 Symmetrical"},
+        {  15.0f, 0, 0, "Direct HRTF"      },
+        {  30.0f, 1, 1, "VBAP 5 Symmetrical"}, {  30.0f, 0, 0, "Direct HRTF"      },
+        {  45.0f, 1, 0, "VBAP 5 Standard"  }, {  45.0f, 1, 1, "VBAP 5 Symmetrical"},
+        {  45.0f, 4, 1, "VBAP 12 Symmetrical"}, {  45.0f, 0, 0, "Direct HRTF"      },
+        {  75.0f, 1, 0, "VBAP 5 Standard"  }, {  75.0f, 2, 0, "VBAP 7 Standard"  },
+        {  75.0f, 1, 1, "VBAP 5 Symmetrical"}, {  75.0f, 4, 1, "VBAP 12 Symmetrical"},
+        {  75.0f, 0, 0, "Direct HRTF"      },
+        { 110.0f, 1, 0, "VBAP 5 Standard"  }, { 110.0f, 4, 1, "VBAP 12 Symmetrical"},
+        { 110.0f, 1, 1, "VBAP 5 Symmetrical"}, { 110.0f, 2, 0, "VBAP 7 Standard"  },
+        { 110.0f, 0, 0, "Direct HRTF"      },
+        { 120.0f, 2, 0, "VBAP 7 Standard"  }, { 120.0f, 0, 0, "Direct HRTF"      },
         { 135.0f, 1, 0, "VBAP 5 Standard"  }, { 135.0f, 2, 0, "VBAP 7 Standard"  },
-        { 135.0f, 0, 0, "Direct HRTF"      }, { 120.0f, 0, 0, "Direct HRTF"      },
-        {  45.0f, 1, 0, "VBAP 5 Standard"  }, {  45.0f, 1, 1, "VBAP 5 Symmetric" },
-        {  45.0f, 4, 0, "VBAP 12 Symmetric"}, {  45.0f, 0, 0, "Direct HRTF"      },
-        {  75.0f, 1, 0, "VBAP 5 Standard"  }, {  75.0f, 1, 1, "VBAP 5 Symmetric" },
-        {  75.0f, 4, 0, "VBAP 12 Symmetric"}, {  75.0f, 0, 0, "Direct HRTF"      },
-        { 115.0f, 1, 0, "VBAP 5 Standard"  }, { 115.0f, 4, 0, "VBAP 12 Symmetric"},
-        { 115.0f, 1, 1, "VBAP 5 Symmetric" }, { 115.0f, 0, 0, "Direct HRTF"      },
-        {  15.0f, 1, 0, "VBAP 5 Standard"  }, {  15.0f, 1, 1, "VBAP 5 Symmetric" },
-        {  15.0f, 0, 0, "Direct HRTF"      }, {  30.0f, 1, 1, "VBAP 5 Symmetric" },
-        {  30.0f, 0, 0, "Direct HRTF"      },
+        { 135.0f, 4, 1, "VBAP 12 Symmetrical"}, { 135.0f, 0, 0, "Direct HRTF"      },
+        { 150.0f, 1, 0, "VBAP 5 Standard"  }, { 150.0f, 0, 0, "Direct HRTF"      },
+        { 165.0f, 1, 0, "VBAP 5 Standard"  }, { 165.0f, 2, 0, "VBAP 7 Standard"  },
+        { 165.0f, 4, 1, "VBAP 12 Symmetrical"}, { 165.0f, 0, 0, "Direct HRTF"      },
     };
     researcherTrialList.clear();
     for (const auto& p : k) { TrialEntry e; e.angle=p.a; e.layoutMode=p.lm; e.topology=p.tp; e.displayName=p.n; researcherTrialList.push_back(e); }
@@ -446,19 +448,22 @@ void BinauralTestSessionEditor::loadLPreset()
     struct P { float a; int lm, tp; const char* n; };
     static const P k[] = {
         { 195.0f, 1, 0, "VBAP 5 Standard"  }, { 195.0f, 2, 0, "VBAP 7 Standard"  },
-        { 195.0f, 4, 0, "VBAP 12 Symmetric"}, { 195.0f, 0, 0, "Direct HRTF"      },
+        { 195.0f, 4, 1, "VBAP 12 Symmetrical"}, { 195.0f, 0, 0, "Direct HRTF"      },
         { 210.0f, 1, 0, "VBAP 5 Standard"  }, { 210.0f, 0, 0, "Direct HRTF"      },
         { 225.0f, 1, 0, "VBAP 5 Standard"  }, { 225.0f, 2, 0, "VBAP 7 Standard"  },
-        { 225.0f, 0, 0, "Direct HRTF"      }, { 240.0f, 0, 0, "Direct HRTF"      },
-        { 315.0f, 1, 0, "VBAP 5 Standard"  }, { 315.0f, 1, 1, "VBAP 5 Symmetric" },
-        { 315.0f, 4, 0, "VBAP 12 Symmetric"}, { 315.0f, 0, 0, "Direct HRTF"      },
-        { 285.0f, 1, 0, "VBAP 5 Standard"  }, { 285.0f, 1, 1, "VBAP 5 Symmetric" },
-        { 285.0f, 4, 0, "VBAP 12 Symmetric"}, { 285.0f, 0, 0, "Direct HRTF"      },
-        { 245.0f, 1, 0, "VBAP 5 Standard"  }, { 245.0f, 4, 0, "VBAP 12 Symmetric"},
-        { 245.0f, 1, 1, "VBAP 5 Symmetric" }, { 245.0f, 0, 0, "Direct HRTF"      },
-        { 345.0f, 1, 0, "VBAP 5 Standard"  }, { 345.0f, 1, 1, "VBAP 5 Symmetric" },
-        { 345.0f, 0, 0, "Direct HRTF"      }, { 330.0f, 1, 1, "VBAP 5 Symmetric" },
-        { 330.0f, 0, 0, "Direct HRTF"      },
+        { 225.0f, 4, 1, "VBAP 12 Symmetrical"}, { 225.0f, 0, 0, "Direct HRTF"      },
+        { 240.0f, 2, 0, "VBAP 7 Standard"  }, { 240.0f, 0, 0, "Direct HRTF"      },
+        { 250.0f, 1, 0, "VBAP 5 Standard"  }, { 250.0f, 4, 1, "VBAP 12 Symmetrical"},
+        { 250.0f, 1, 1, "VBAP 5 Symmetrical"}, { 250.0f, 2, 0, "VBAP 7 Standard"  },
+        { 250.0f, 0, 0, "Direct HRTF"      },
+        { 285.0f, 1, 0, "VBAP 5 Standard"  }, { 285.0f, 2, 0, "VBAP 7 Standard"  },
+        { 285.0f, 1, 1, "VBAP 5 Symmetrical"}, { 285.0f, 4, 1, "VBAP 12 Symmetrical"},
+        { 285.0f, 0, 0, "Direct HRTF"      },
+        { 315.0f, 1, 0, "VBAP 5 Standard"  }, { 315.0f, 1, 1, "VBAP 5 Symmetrical"},
+        { 315.0f, 4, 1, "VBAP 12 Symmetrical"}, { 315.0f, 0, 0, "Direct HRTF"      },
+        { 330.0f, 1, 1, "VBAP 5 Symmetrical"}, { 330.0f, 0, 0, "Direct HRTF"      },
+        { 345.0f, 1, 0, "VBAP 5 Standard"  }, { 345.0f, 1, 1, "VBAP 5 Symmetrical"},
+        { 345.0f, 0, 0, "Direct HRTF"      },
     };
     researcherTrialList.clear();
     for (const auto& p : k) { TrialEntry e; e.angle=p.a; e.layoutMode=p.lm; e.topology=p.tp; e.displayName=p.n; researcherTrialList.push_back(e); }
@@ -470,25 +475,27 @@ void BinauralTestSessionEditor::loadLRPreset()
     struct P { float a; int lm, tp; const char* n; };
     static const P k[] = {
         // Right side
-        { 165.0f, 1, 0, "VBAP 5 Standard"  }, { 165.0f, 4, 0, "VBAP 12 Symmetric"},
-        { 150.0f, 1, 0, "VBAP 5 Standard"  },
-        { 135.0f, 2, 0, "VBAP 7 Standard"  }, { 135.0f, 0, 0, "Direct HRTF"      },
-        { 120.0f, 0, 0, "Direct HRTF"      },
-        { 115.0f, 4, 0, "VBAP 12 Symmetric"}, { 115.0f, 0, 0, "Direct HRTF"      },
-        {  75.0f, 1, 0, "VBAP 5 Standard"  }, {  75.0f, 1, 1, "VBAP 5 Symmetric" },
-        {  45.0f, 1, 1, "VBAP 5 Symmetric" }, {  45.0f, 0, 0, "Direct HRTF"      },
-        {  30.0f, 1, 1, "VBAP 5 Symmetric" },
         {  15.0f, 1, 0, "VBAP 5 Standard"  }, {  15.0f, 0, 0, "Direct HRTF"      },
-        // Left side (mirrored)
-        { 195.0f, 2, 0, "VBAP 7 Standard"  }, { 195.0f, 0, 0, "Direct HRTF"      },
-        { 210.0f, 0, 0, "Direct HRTF"      },
-        { 225.0f, 1, 0, "VBAP 5 Standard"  },
+        {  30.0f, 1, 1, "VBAP 5 Symmetrical"},
+        {  45.0f, 1, 0, "VBAP 5 Standard"  }, {  45.0f, 0, 0, "Direct HRTF"      },
+        {  75.0f, 2, 0, "VBAP 7 Standard"  }, {  75.0f, 1, 1, "VBAP 5 Symmetrical"},
+        {  75.0f, 0, 0, "Direct HRTF"      },
+        { 110.0f, 1, 1, "VBAP 5 Symmetrical"}, { 110.0f, 4, 1, "VBAP 12 Symmetrical"},
+        { 120.0f, 2, 0, "VBAP 7 Standard"  },
+        { 135.0f, 1, 0, "VBAP 5 Standard"  }, { 135.0f, 4, 1, "VBAP 12 Symmetrical"},
+        { 150.0f, 0, 0, "Direct HRTF"      },
+        { 165.0f, 1, 0, "VBAP 5 Standard"  }, { 165.0f, 0, 0, "Direct HRTF"      },
+        // Left side (mirrored, 360 - angle)
+        { 195.0f, 2, 0, "VBAP 7 Standard"  }, { 195.0f, 4, 1, "VBAP 12 Symmetrical"},
+        { 210.0f, 1, 0, "VBAP 5 Standard"  },
+        { 225.0f, 2, 0, "VBAP 7 Standard"  }, { 225.0f, 0, 0, "Direct HRTF"      },
         { 240.0f, 0, 0, "Direct HRTF"      },
-        { 245.0f, 1, 0, "VBAP 5 Standard"  }, { 245.0f, 1, 1, "VBAP 5 Symmetric" },
-        { 285.0f, 4, 0, "VBAP 12 Symmetric"}, { 285.0f, 0, 0, "Direct HRTF"      },
-        { 315.0f, 1, 0, "VBAP 5 Standard"  }, { 315.0f, 4, 0, "VBAP 12 Symmetric"},
+        { 250.0f, 1, 0, "VBAP 5 Standard"  }, { 250.0f, 2, 0, "VBAP 7 Standard"  },
+        { 250.0f, 0, 0, "Direct HRTF"      },
+        { 285.0f, 1, 0, "VBAP 5 Standard"  }, { 285.0f, 4, 1, "VBAP 12 Symmetrical"},
+        { 315.0f, 1, 1, "VBAP 5 Symmetrical"}, { 315.0f, 4, 1, "VBAP 12 Symmetrical"},
         { 330.0f, 0, 0, "Direct HRTF"      },
-        { 345.0f, 1, 1, "VBAP 5 Symmetric" },
+        { 345.0f, 1, 1, "VBAP 5 Symmetrical"},
     };
     researcherTrialList.clear();
     for (const auto& p : k) { TrialEntry e; e.angle=p.a; e.layoutMode=p.lm; e.topology=p.tp; e.displayName=p.n; researcherTrialList.push_back(e); }
@@ -888,7 +895,8 @@ void BinauralTestSessionEditor::resized()
 
             const int halfW = (innerW - kChipGap) / 2;
             int chipIdx = 0;
-            for (int row = 0; row < chipRows && chipIdx < 10; ++row)
+            const int numChips = static_cast<int>(kChipConfigs.size());
+            for (int row = 0; row < chipRows && chipIdx < numChips; ++row)
             {
                 const int rowY = cy + row * (kChipH + kChipGap);
                 if (kChipConfigs[chipIdx].fullWidth)
@@ -902,7 +910,7 @@ void BinauralTestSessionEditor::resized()
                     chipBounds[chipIdx] = { innerX, rowY, halfW, kChipH };
                     chipBtns[chipIdx].setBounds(chipBounds[chipIdx]);
                     ++chipIdx;
-                    if (chipIdx < 10 && !kChipConfigs[chipIdx].fullWidth)
+                    if (chipIdx < numChips && !kChipConfigs[chipIdx].fullWidth)
                     {
                         chipBounds[chipIdx] = { innerX + halfW + kChipGap, rowY, halfW, kChipH };
                         chipBtns[chipIdx].setBounds(chipBounds[chipIdx]);

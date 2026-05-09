@@ -50,8 +50,9 @@ public:
         a new trial begins. */
     void logCurrentTrialSelection(float targetAzimuthDeg) const;
 
-    /** True if the given layout mode supports an asymmetric topology. */
-    static bool layoutSupportsAsymmetric(int layoutMode) noexcept;
+    /** True if the given layout mode has a Standard topology (T1) in addition
+        to the Symmetrical (T2). VBAP 5/7/9 do; VBAP 12/18 and Direct HRTF do not. */
+    static bool layoutHasStandardTopology(int layoutMode) noexcept;
 
 
 private:

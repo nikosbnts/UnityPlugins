@@ -6,7 +6,13 @@
       "Bash(Sort-Object)",
       "Bash(dir \"C:\\\\Users\\\\nikos\\\\Desktop\\\\Diplomatiki\\\\JucePlugins\\\\Assets\\\\0ele\\\\48K_24bit_0ele\")",
       "Bash(dir \"C:\\\\Users\\\\nikos\\\\Desktop\\\\Diplomatiki\\\\JucePlugins\\\\Assets\" /s /b)",
-      "Bash(findstr /i \"readme\\\\|txt\\\\|pdf\\\\|info\\\\|meta\")"
+      "Bash(findstr /i \"readme\\\\|txt\\\\|pdf\\\\|info\\\\|meta\")",
+      "Bash(cmake --build build --config Release --target BinauralPlugin_VST3)",
+      "WebFetch(domain:www.itu.int)",
+      "WebSearch",
+      "WebFetch(domain:mediaarea.net)",
+      "WebFetch(domain:ear.readthedocs.io)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }

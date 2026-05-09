@@ -94,10 +94,11 @@ float AudioPluginAudioProcessor::unwrapTargetAzimuthNearReference(float referenc
     return wrappedTarget;
 }
 
-bool AudioPluginAudioProcessor::layoutSupportsAsymmetric(int layoutMode) noexcept
+bool AudioPluginAudioProcessor::layoutHasStandardTopology(int layoutMode) noexcept
 {
-    // VBAP 5 (1), 7 (2), 9 (3), 12 (4) have two topologies; Direct HRTF (0) and VBAP 18 (5) do not.
-    return layoutMode >= 1 && layoutMode <= 4;
+    // VBAP 5 (1), 7 (2), 9 (3) have both Standard (T1) and Symmetrical (T2).
+    // VBAP 12 (4), VBAP 18 (5) and Direct HRTF (0) only have Symmetrical (or none).
+    return layoutMode >= 1 && layoutMode <= 3;
 }
 
 void AudioPluginAudioProcessor::fillSpeakerAnglesForLayout(int layoutMode,
@@ -105,15 +106,11 @@ void AudioPluginAudioProcessor::fillSpeakerAnglesForLayout(int layoutMode,
     std::array<float, kMaxSpeakers>& speakerAzimuths,
     int& speakerCount) const
 {
-    static constexpr float cinema5[] = { 0.0f, 30.0f, 120.0f, 240.0f, 330.0f };
-    static constexpr float sym5[]    = { 0.0f, 60.0f, 120.0f, 240.0f, 300.0f };
-    static constexpr float cinema7[] = { 0.0f, 30.0f, 120.0f, 150.0f, 210.0f, 240.0f, 330.0f };
-    static constexpr float sym7[]    = { 0.0f, 51.43f, 102.86f, 154.29f, 205.71f, 257.14f, 308.57f };
-    static constexpr float asym9[]   = { 0.0f, 30.0f, 60.0f, 100.0f, 150.0f, 210.0f, 260.0f, 300.0f, 330.0f };
-    static constexpr float asym12[]  = {
-        0.0f, 22.0f, 45.0f, 75.0f, 100.0f, 135.0f,
-        180.0f, 225.0f, 260.0f, 285.0f, 315.0f, 338.0f
-    };
+    static constexpr float standard5[] = { 0.0f, 30.0f, 120.0f, 240.0f, 330.0f };
+    static constexpr float sym5[]      = { 0.0f, 60.0f, 120.0f, 240.0f, 300.0f };
+    static constexpr float standard7[] = { 0.0f, 30.0f, 90.0f, 150.0f, 210.0f, 270.0f, 330.0f };
+    static constexpr float sym7[]      = { 0.0f, 51.43f, 102.86f, 154.29f, 205.71f, 257.14f, 308.57f };
+    static constexpr float standard9[] = { 0.0f, 30.0f, 60.0f, 100.0f, 150.0f, 210.0f, 260.0f, 300.0f, 330.0f };
 
     const float* fixedArray = nullptr;
     int fixedCount = 0;
@@ -121,23 +118,22 @@ void AudioPluginAudioProcessor::fillSpeakerAnglesForLayout(int layoutMode,
 
     switch (layoutMode)
     {
-    case 1: // VBAP 5 — Topology 1=Cinema, Topology 2=Symmetric
-        fixedArray = (topology == 1) ? sym5 : cinema5;
+    case 1: // VBAP 5 — Topology 1=Standard, Topology 2=Symmetrical
+        fixedArray = (topology == 1) ? sym5 : standard5;
         fixedCount = 5;
         break;
-    case 2: // VBAP 7 — Topology 1=Cinema, Topology 2=Symmetric
-        fixedArray = (topology == 1) ? sym7 : cinema7;
+    case 2: // VBAP 7 — Topology 1=Standard, Topology 2=Symmetrical
+        fixedArray = (topology == 1) ? sym7 : standard7;
         fixedCount = 7;
         break;
-    case 3: // VBAP 9 — Topology 1=Symmetric, Topology 2=Asymmetric
-        if (topology == 1) { fixedArray = asym9; fixedCount = 9; }
+    case 3: // VBAP 9 — Topology 1=Standard, Topology 2=Symmetrical
+        if (topology == 0) { fixedArray = standard9; fixedCount = 9; }
         else               { symCount = 9;  symStep = 40; }
         break;
-    case 4: // VBAP 12 — Topology 1=Symmetric, Topology 2=Asymmetric
-        if (topology == 1) { fixedArray = asym12; fixedCount = 12; }
-        else               { symCount = 12; symStep = 30; }
+    case 4: // VBAP 12 — Symmetrical only
+        symCount = 12; symStep = 30;
         break;
-    case 5: // VBAP 18 — Topology 1 only (symmetric)
+    case 5: // VBAP 18 — Symmetrical only
         symCount = 18; symStep = 20;
         break;
     default:
@@ -450,7 +446,7 @@ void AudioPluginAudioProcessor::logCurrentTrialSelection(float targetAzimuthDeg)
     const int layoutMode = layoutModeParam ? juce::roundToInt(layoutModeParam->load()) : 0;
     const int topology = topologyParam ? juce::roundToInt(topologyParam->load()) : 0;
 
-    const juce::String topologyName = (topology == 1) ? "Asymmetric" : "Symmetric";
+    const juce::String topologyName = (topology == 1) ? "Symmetrical" : "Standard";
 
     if (layoutMode == 0)
     {
