@@ -176,7 +176,7 @@ BinauralTestSessionEditor::BinauralTestSessionEditor(AudioPluginAudioProcessor& 
     submitBtn.onClick = [this] { onSubmit(); };
     addChildComponent(playBtn);
     addChildComponent(submitBtn);
-    stylePlayButton(false);
+    stylePlayButton(colAccent);
     styleAccentButton(submitBtn);
 
     confBtn1.onClick = [this] { onConfidence(1); };
@@ -218,17 +218,6 @@ BinauralTestSessionEditor::~BinauralTestSessionEditor()
 //==============================================================================
 void BinauralTestSessionEditor::timerCallback()
 {
-    if (processorRef.audioPlayer.isPlaying())
-    {
-        playBtn.setButtonText("Stop");
-        stylePlayButton(true);
-    }
-    else
-    {
-        playBtn.setButtonText("Play");
-        stylePlayButton(false);
-    }
-
     if (barFlashTicks > 0)
     {
         --barFlashTicks;
@@ -262,9 +251,9 @@ void BinauralTestSessionEditor::styleAccentButton(juce::TextButton& btn)
     btn.setColour(juce::TextButton::textColourOnId,  juce::Colours::white);
 }
 
-void BinauralTestSessionEditor::stylePlayButton(bool isStop)
+void BinauralTestSessionEditor::stylePlayButton(juce::uint32 colour)
 {
-    playBtn.setColour(juce::TextButton::buttonColourId,  juce::Colour(isStop ? colRed : colGreen));
+    playBtn.setColour(juce::TextButton::buttonColourId,  juce::Colour(colour));
     playBtn.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     playBtn.setColour(juce::TextButton::textColourOnId,  juce::Colours::white);
 }
@@ -414,7 +403,7 @@ void BinauralTestSessionEditor::confirmAndLoadPreset(std::function<void()> loade
 
 void BinauralTestSessionEditor::onLoadPreset()   { confirmAndLoadPreset([this] { loadRPreset();  }, "R test (31 trials)");   }
 void BinauralTestSessionEditor::onLoadLPreset()  { confirmAndLoadPreset([this] { loadLPreset();  }, "L test (31 trials)");   }
-void BinauralTestSessionEditor::onLoadLRPreset() { confirmAndLoadPreset([this] { loadLRPreset(); }, "L+R test (31 trials)"); }
+void BinauralTestSessionEditor::onLoadLRPreset() { confirmAndLoadPreset([this] { loadLRPreset(); }, "L+R test (33 trials)"); }
 
 void BinauralTestSessionEditor::loadRPreset()
 {
@@ -472,33 +461,36 @@ void BinauralTestSessionEditor::loadLPreset()
 
 void BinauralTestSessionEditor::loadLRPreset()
 {
-    struct P { float a; int lm, tp; const char* n; };
+    struct P { float a; int lm, tp; const char* n; bool practice; };
     static const P k[] = {
+        // Practice trials (locked at start, not saved to CSV)
+        {  45.0f, 0, 0, "Direct HRTF", true  },
+        { 225.0f, 0, 0, "Direct HRTF", true  },
         // Right side
-        {  15.0f, 1, 0, "VBAP 5 Standard"  }, {  15.0f, 0, 0, "Direct HRTF"      },
-        {  30.0f, 1, 1, "VBAP 5 Symmetrical"},
-        {  45.0f, 1, 0, "VBAP 5 Standard"  }, {  45.0f, 0, 0, "Direct HRTF"      },
-        {  75.0f, 2, 0, "VBAP 7 Standard"  }, {  75.0f, 1, 1, "VBAP 5 Symmetrical"},
-        {  75.0f, 0, 0, "Direct HRTF"      },
-        { 110.0f, 1, 1, "VBAP 5 Symmetrical"}, { 110.0f, 4, 1, "VBAP 12 Symmetrical"},
-        { 120.0f, 2, 0, "VBAP 7 Standard"  },
-        { 135.0f, 1, 0, "VBAP 5 Standard"  }, { 135.0f, 4, 1, "VBAP 12 Symmetrical"},
-        { 150.0f, 0, 0, "Direct HRTF"      },
-        { 165.0f, 1, 0, "VBAP 5 Standard"  }, { 165.0f, 0, 0, "Direct HRTF"      },
+        {  15.0f, 1, 0, "VBAP 5 Standard",     false }, {  15.0f, 0, 0, "Direct HRTF",         false },
+        {  30.0f, 1, 1, "VBAP 5 Symmetrical",  false },
+        {  45.0f, 1, 0, "VBAP 5 Standard",     false }, {  45.0f, 0, 0, "Direct HRTF",         false },
+        {  75.0f, 2, 0, "VBAP 7 Standard",     false }, {  75.0f, 1, 1, "VBAP 5 Symmetrical",  false },
+        {  75.0f, 0, 0, "Direct HRTF",         false },
+        { 110.0f, 1, 1, "VBAP 5 Symmetrical",  false }, { 110.0f, 4, 1, "VBAP 12 Symmetrical", false },
+        { 120.0f, 2, 0, "VBAP 7 Standard",     false },
+        { 135.0f, 1, 0, "VBAP 5 Standard",     false }, { 135.0f, 4, 1, "VBAP 12 Symmetrical", false },
+        { 150.0f, 0, 0, "Direct HRTF",         false },
+        { 165.0f, 1, 0, "VBAP 5 Standard",     false }, { 165.0f, 0, 0, "Direct HRTF",         false },
         // Left side (mirrored, 360 - angle)
-        { 195.0f, 2, 0, "VBAP 7 Standard"  }, { 195.0f, 4, 1, "VBAP 12 Symmetrical"},
-        { 210.0f, 1, 0, "VBAP 5 Standard"  },
-        { 225.0f, 2, 0, "VBAP 7 Standard"  }, { 225.0f, 0, 0, "Direct HRTF"      },
-        { 240.0f, 0, 0, "Direct HRTF"      },
-        { 250.0f, 1, 0, "VBAP 5 Standard"  }, { 250.0f, 2, 0, "VBAP 7 Standard"  },
-        { 250.0f, 0, 0, "Direct HRTF"      },
-        { 285.0f, 1, 0, "VBAP 5 Standard"  }, { 285.0f, 4, 1, "VBAP 12 Symmetrical"},
-        { 315.0f, 1, 1, "VBAP 5 Symmetrical"}, { 315.0f, 4, 1, "VBAP 12 Symmetrical"},
-        { 330.0f, 0, 0, "Direct HRTF"      },
-        { 345.0f, 1, 1, "VBAP 5 Symmetrical"},
+        { 195.0f, 2, 0, "VBAP 7 Standard",     false }, { 195.0f, 4, 1, "VBAP 12 Symmetrical", false },
+        { 210.0f, 1, 0, "VBAP 5 Standard",     false },
+        { 225.0f, 2, 0, "VBAP 7 Standard",     false }, { 225.0f, 0, 0, "Direct HRTF",         false },
+        { 240.0f, 0, 0, "Direct HRTF",         false },
+        { 250.0f, 1, 0, "VBAP 5 Standard",     false }, { 250.0f, 2, 0, "VBAP 7 Standard",     false },
+        { 250.0f, 0, 0, "Direct HRTF",         false },
+        { 285.0f, 1, 0, "VBAP 5 Standard",     false }, { 285.0f, 4, 1, "VBAP 12 Symmetrical", false },
+        { 315.0f, 1, 1, "VBAP 5 Symmetrical",  false }, { 315.0f, 4, 1, "VBAP 12 Symmetrical", false },
+        { 330.0f, 0, 0, "Direct HRTF",         false },
+        { 345.0f, 1, 1, "VBAP 5 Symmetrical",  false },
     };
     researcherTrialList.clear();
-    for (const auto& p : k) { TrialEntry e; e.angle=p.a; e.layoutMode=p.lm; e.topology=p.tp; e.displayName=p.n; researcherTrialList.push_back(e); }
+    for (const auto& p : k) { TrialEntry e; e.angle=p.a; e.layoutMode=p.lm; e.topology=p.tp; e.displayName=p.n; e.isPractice=p.practice; researcherTrialList.push_back(e); }
     trialListBox.updateContent(); trialListBox.repaint(); updateStartButton(); repaint();
 }
 
@@ -562,17 +554,24 @@ void BinauralTestSessionEditor::onStart()
     // ── Build ordered trial list ──────────────────────────────────────
     orderedTrials = researcherTrialList;
 
-    // Fisher-Yates shuffle
+    // Practice trials (if any) are kept at the front in their original
+    // order; only the trials after them are shuffled.
+    int practiceCount = 0;
+    while (practiceCount < static_cast<int>(orderedTrials.size())
+           && orderedTrials[static_cast<size_t>(practiceCount)].isPractice)
+        ++practiceCount;
+
+    // Fisher-Yates shuffle (non-practice tail only)
     juce::Random rng;
-    for (int i = static_cast<int>(orderedTrials.size()) - 1; i > 0; --i)
+    for (int i = static_cast<int>(orderedTrials.size()) - 1; i > practiceCount; --i)
     {
-        int j = rng.nextInt(i + 1);
+        int j = practiceCount + rng.nextInt(i - practiceCount + 1);
         std::swap(orderedTrials[static_cast<size_t>(i)],
                   orderedTrials[static_cast<size_t>(j)]);
     }
 
-    // Fix constraint: no same angle twice in a row
-    for (int i = 0; i + 1 < static_cast<int>(orderedTrials.size()); ++i)
+    // Fix constraint: no same angle twice in a row (only within shuffled tail)
+    for (int i = practiceCount; i + 1 < static_cast<int>(orderedTrials.size()); ++i)
     {
         if (juce::exactlyEqual(orderedTrials[static_cast<size_t>(i)].angle,
                                orderedTrials[static_cast<size_t>(i + 1)].angle))
@@ -622,13 +621,44 @@ void BinauralTestSessionEditor::onStart()
 //==============================================================================
 void BinauralTestSessionEditor::onPlay()
 {
-    if (processorRef.audioPlayer.isPlaying())
-        processorRef.audioPlayer.stop();
-    else if (session.useInternalAudio && processorRef.audioPlayer.isLoaded())
+    switch (playState)
     {
-        processorRef.audioPlayer.setLooping(true);
-        processorRef.audioPlayer.play();
+        case PlayState::Idle:
+            if (session.useInternalAudio && processorRef.audioPlayer.isLoaded())
+            {
+                processorRef.audioPlayer.setLooping(true);
+                processorRef.audioPlayer.play();
+                playState = PlayState::Playing;
+                playBtn.setButtonText(juce::String::fromUTF8("\xe2\x96\xa0 Stop"));
+                stylePlayButton(colRed);
+            }
+            break;
+
+        case PlayState::Playing:
+            processorRef.audioPlayer.stop();
+            playState = PlayState::Paused;
+            playBtn.setButtonText(juce::String::fromUTF8("\xe2\x96\xb6 Play"));
+            stylePlayButton(colGreen);
+            break;
+
+        case PlayState::Paused:
+            if (session.useInternalAudio && processorRef.audioPlayer.isLoaded())
+            {
+                processorRef.audioPlayer.setLooping(true);
+                processorRef.audioPlayer.play();
+                playState = PlayState::Playing;
+                playBtn.setButtonText(juce::String::fromUTF8("\xe2\x96\xa0 Stop"));
+                stylePlayButton(colRed);
+            }
+            break;
     }
+}
+
+void BinauralTestSessionEditor::resetPlayButton()
+{
+    playState = PlayState::Idle;
+    playBtn.setButtonText("Start Trial");
+    stylePlayButton(colAccent);
 }
 
 void BinauralTestSessionEditor::onConfidence(int level)
@@ -647,6 +677,7 @@ void BinauralTestSessionEditor::onSubmit()
 {
     if (!session.canSubmit()) return;
     processorRef.audioPlayer.stop();
+    resetPlayButton();
     session.submitCurrentTrial();
     session.advanceAfterFeedback();
 
@@ -713,6 +744,7 @@ void BinauralTestSessionEditor::onSave()
 void BinauralTestSessionEditor::onNewSession()
 {
     session.reset();
+    resetPlayButton();
     researcherTrialList.clear();
     orderedTrials.clear();
     isResearcherMode = true;
@@ -748,6 +780,7 @@ void BinauralTestSessionEditor::onEndSession()
                 if (result == 1)
                 {
                     processorRef.audioPlayer.stop();
+                    resetPlayButton();
                     session.userResponse   = -1.0f;
                     session.userConfidence = 0;
                     session.screen = TestSession::Screen::Summary;
@@ -977,7 +1010,9 @@ void BinauralTestSessionEditor::resized()
     const int confX      = (W - confTotalW) / 2;
 
     int trialY = static_cast<int>(circCy + circR) + 66;
-    playBtn.setBounds(confX, trialY, confTotalW, kTrialFieldH);
+    const int playBtnW = 240;
+    const int playBtnX = (W - playBtnW) / 2;
+    playBtn.setBounds(playBtnX, trialY, playBtnW, kTrialFieldH);
 
     trialY += kTrialFieldH + 42;
     confBtn1.setBounds(confX,                         trialY, confW, confW);

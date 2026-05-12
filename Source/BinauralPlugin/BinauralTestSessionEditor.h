@@ -124,6 +124,7 @@ private:
         int    layoutMode  = 0;
         int    topology    = 0;
         juce::String displayName;
+        bool   isPractice  = false;
     };
 
     //==========================================================================
@@ -168,7 +169,7 @@ private:
     juce::ListBox    trialListBox;
 
     //-- Trial / feedback / summary
-    juce::TextButton playBtn   { "Play" };
+    juce::TextButton playBtn   { "Start Trial" };
     juce::TextButton submitBtn { "Submit answer" };
     juce::TextButton confBtn1  { "1" }, confBtn2 { "2" }, confBtn3 { "3" },
                      confBtn4  { "4" }, confBtn5 { "5" };
@@ -183,6 +184,10 @@ private:
 
     //-- Progress bar flash after submit
     int barFlashTicks = 0;
+
+    //-- Play-button state machine (Start / Pause / Resume)
+    enum class PlayState { Idle, Playing, Paused };
+    PlayState playState { PlayState::Idle };
 
     //-- Card rectangles (setup)
     juce::Rectangle<int> cardSession;
@@ -233,8 +238,9 @@ private:
     //==========================================================================
     void styleChipButton(juce::TextButton& btn, bool selected);
     void styleAccentButton(juce::TextButton& btn);
-    void stylePlayButton(bool isStop);
+    void stylePlayButton(juce::uint32 colour);
     void styleConfidenceButton(juce::TextButton& btn, bool selected);
+    void resetPlayButton();
 
     //==========================================================================
     //  Sync
