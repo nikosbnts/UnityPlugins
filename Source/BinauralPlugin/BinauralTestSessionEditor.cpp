@@ -403,7 +403,7 @@ void BinauralTestSessionEditor::confirmAndLoadPreset(std::function<void()> loade
 
 void BinauralTestSessionEditor::onLoadPreset()   { confirmAndLoadPreset([this] { loadRPreset();  }, "R test (31 trials)");   }
 void BinauralTestSessionEditor::onLoadLPreset()  { confirmAndLoadPreset([this] { loadLPreset();  }, "L test (31 trials)");   }
-void BinauralTestSessionEditor::onLoadLRPreset() { confirmAndLoadPreset([this] { loadLRPreset(); }, "L+R test (33 trials)"); }
+void BinauralTestSessionEditor::onLoadLRPreset() { confirmAndLoadPreset([this] { loadLRPreset(); }, "L+R test (36 trials)"); }
 
 void BinauralTestSessionEditor::loadRPreset()
 {
@@ -463,9 +463,12 @@ void BinauralTestSessionEditor::loadLRPreset()
 {
     struct P { float a; int lm, tp; const char* n; bool practice; };
     static const P k[] = {
-        // Practice trials (locked at start, not saved to CSV)
-        {  45.0f, 0, 0, "Direct HRTF", true  },
-        { 225.0f, 0, 0, "Direct HRTF", true  },
+        // Practice trials
+        {  30.0f, 0, 0, "Direct HRTF",        true },
+        {  90.0f, 0, 0, "Direct HRTF",        true },
+        { 180.0f, 0, 0, "Direct HRTF",        true },
+        { 225.0f, 0, 0, "Direct HRTF",        true },
+        { 300.0f, 0, 0, "Direct HRTF",        true },
         // Right side
         {  15.0f, 1, 0, "VBAP 5 Standard",     false }, {  15.0f, 0, 0, "Direct HRTF",         false },
         {  30.0f, 1, 1, "VBAP 5 Symmetrical",  false },
@@ -477,7 +480,7 @@ void BinauralTestSessionEditor::loadLRPreset()
         { 135.0f, 1, 0, "VBAP 5 Standard",     false }, { 135.0f, 4, 1, "VBAP 12 Symmetrical", false },
         { 150.0f, 0, 0, "Direct HRTF",         false },
         { 165.0f, 1, 0, "VBAP 5 Standard",     false }, { 165.0f, 0, 0, "Direct HRTF",         false },
-        // Left side (mirrored, 360 - angle)
+        // Left side
         { 195.0f, 2, 0, "VBAP 7 Standard",     false }, { 195.0f, 4, 1, "VBAP 12 Symmetrical", false },
         { 210.0f, 1, 0, "VBAP 5 Standard",     false },
         { 225.0f, 2, 0, "VBAP 7 Standard",     false }, { 225.0f, 0, 0, "Direct HRTF",         false },
