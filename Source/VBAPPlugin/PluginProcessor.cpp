@@ -1,5 +1,5 @@
 #include "PluginProcessor.h"
-#include "VbapTestSessionEditor.h"
+#include "VbapParameterEditor.h"
 
 AudioPluginAudioProcessor::AudioPluginAudioProcessor()
     : AudioProcessor(BusesProperties()
@@ -144,7 +144,7 @@ bool AudioPluginAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* AudioPluginAudioProcessor::createEditor()
 {
-    return new VbapTestSessionEditor(*this);
+    return new VbapParameterEditor(*this);
 }
 
 const juce::String AudioPluginAudioProcessor::getName() const
@@ -237,7 +237,7 @@ AudioPluginAudioProcessor::createParameterLayout()
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         "sourceAzimuth", "Source Azimuth",
-        juce::NormalisableRange<float>(0.0f, 360.0f, 0.01f), 0.0f));
+        juce::NormalisableRange<float>(0.0f, 360.0f, 1.0f), 0.0f));
 
     params.push_back(std::make_unique<juce::AudioParameterInt>(
         "speakerCount", "Speaker Count",
@@ -260,7 +260,7 @@ AudioPluginAudioProcessor::createParameterLayout()
         params.push_back(std::make_unique<juce::AudioParameterFloat>(
             "speakerAz" + juce::String(i + 1),
             "Speaker " + juce::String(i + 1) + " Azimuth",
-            juce::NormalisableRange<float>(0.0f, 360.0f, 0.01f),
+            juce::NormalisableRange<float>(0.0f, 360.0f, 1.0f),
             def));
     }
 

@@ -71,13 +71,13 @@ namespace vbap
     {
         switch (n)
         {
-            case 2: return { 330.0f, 30.0f };
-            case 3: return { 330.0f, 0.0f, 30.0f };
-            case 4: return { 330.0f, 30.0f, 250.0f, 110.0f };
-            case 5: return { 30.0f, 330.0f, 110.0f, 250.0f, 0.0f };
-            case 6: return { 30.0f, 330.0f, 0.0f, 110.0f, 250.0f, 180.0f };
-            case 7: return { 30.0f, 330.0f, 0.0f, 110.0f, 250.0f, 210.0f, 150.0f };
-            case 8: return { 30.0f, 330.0f, 0.0f, 110.0f, 250.0f, 210.0f, 150.0f, 180.0f };
+            case 2: return { 30.0f, 330.0f };
+            case 3: return { 0.0f, 90.0f, 270.0f};
+            case 4: return { 30.0f, 330.0f, 120.0f, 240.0f };
+            case 5: return { 30.0f, 330.0f, 120.0f, 240.0f, 0.0f };
+            case 6: return { 0.0f, 30.0f, 330.0f, 90.0f, 270.0f,180.0f };
+            case 7: return { 0.0f,30.0f, 330.0f, 90.0f, 270.0f, 150.0f, 210.0f };
+            case 8: return { 0.0f,30.0f, 330.0f, 90.0f, 270.0f, 120.0f, 240.0f, 180.0f };
         }
 
         std::vector<float> ang(n);

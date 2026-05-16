@@ -61,6 +61,8 @@ set(COMMON_SOURCE_FILES
 set(VBAP_SOURCE_FILES
     Source/VBAPPlugin/PluginProcessor.h
     Source/VBAPPlugin/PluginProcessor.cpp
+    Source/VBAPPlugin/VbapParameterEditor.h
+    Source/VBAPPlugin/VbapParameterEditor.cpp
     Source/VBAPPlugin/VbapTestSessionEditor.h
     Source/VBAPPlugin/VbapTestSessionEditor.cpp
 )
