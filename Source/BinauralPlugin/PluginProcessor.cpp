@@ -1,5 +1,10 @@
 #include "PluginProcessor.h"
-#include "BinauralTestSessionEditor.h"
+
+#if BINAURAL_EDITOR_MODE == 1
+ #include "BinauralParameterEditor.h"
+#else
+ #include "BinauralTestSessionEditor.h"
+#endif
 
 //==============================================================================
 AudioPluginAudioProcessor::AudioPluginAudioProcessor()
@@ -483,7 +488,11 @@ bool AudioPluginAudioProcessor::hasEditor() const {
 
 juce::AudioProcessorEditor* AudioPluginAudioProcessor::createEditor()
 {
+#if BINAURAL_EDITOR_MODE == 1
+    return new BinauralParameterEditor(*this);
+#else
     return new BinauralTestSessionEditor(*this);
+#endif
 }
 
 const juce::String AudioPluginAudioProcessor::getName() const

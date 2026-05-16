@@ -54,6 +54,14 @@ public:
         to the Symmetrical (T2). VBAP 5/7/9 do; VBAP 12/18 and Direct HRTF do not. */
     static bool layoutHasStandardTopology(int layoutMode) noexcept;
 
+    /** Builds the speaker layout for the given (layoutMode, topology) pair.
+        Exposed publicly so the parameter editor can visualise the active
+        speaker constellation on the response circle. */
+    void fillSpeakerAnglesForLayout(int layoutMode,
+        int topology,
+        std::array<float, vbap::kMaxSpeakers>& speakerAzimuths,
+        int& speakerCount) const;
+
 
 private:
     static constexpr int kMaxSpeakers = vbap::kMaxSpeakers;
@@ -84,12 +92,6 @@ private:
     ParameterState::ParameterLayout createParameterLayout();
 
     juce::File getDefaultHrirFolder() const;
-
-    /** Builds the speaker layout for the given (layoutMode, topology) pair. */
-    void fillSpeakerAnglesForLayout(int layoutMode,
-        int topology,
-        std::array<float, kMaxSpeakers>& speakerAzimuths,
-        int& speakerCount) const;
 
     ActivePair findActivePair(float sourceAzimuthDeg,
         const std::array<float, kMaxSpeakers>& speakerAzimuths,
