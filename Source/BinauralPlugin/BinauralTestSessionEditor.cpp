@@ -403,7 +403,7 @@ void BinauralTestSessionEditor::confirmAndLoadPreset(std::function<void()> loade
 
 void BinauralTestSessionEditor::onLoadPreset()   { confirmAndLoadPreset([this] { loadRPreset();  }, "R test (31 trials)");   }
 void BinauralTestSessionEditor::onLoadLPreset()  { confirmAndLoadPreset([this] { loadLPreset();  }, "L test (31 trials)");   }
-void BinauralTestSessionEditor::onLoadLRPreset() { confirmAndLoadPreset([this] { loadLRPreset(); }, "L+R test (36 trials)"); }
+void BinauralTestSessionEditor::onLoadLRPreset() { confirmAndLoadPreset([this] { loadLRPreset(); }, "L+R test (37 trials)"); }
 
 void BinauralTestSessionEditor::loadRPreset()
 {
@@ -473,6 +473,7 @@ void BinauralTestSessionEditor::loadLRPreset()
         {  15.0f, 1, 0, "VBAP 5 Standard",     false }, {  15.0f, 0, 0, "Direct HRTF",         false },
         {  30.0f, 1, 1, "VBAP 5 Symmetrical",  false },
         {  45.0f, 1, 0, "VBAP 5 Standard",     false }, {  45.0f, 0, 0, "Direct HRTF",         false },
+        {  45.0f, 2, 0, "VBAP 7 Standard",     false },
         {  75.0f, 2, 0, "VBAP 7 Standard",     false }, {  75.0f, 1, 1, "VBAP 5 Symmetrical",  false },
         {  75.0f, 0, 0, "Direct HRTF",         false },
         { 110.0f, 1, 1, "VBAP 5 Symmetrical",  false }, { 110.0f, 4, 1, "VBAP 12 Symmetrical", false },
