@@ -8,10 +8,9 @@
   "ExpandedNodes": [
     "",
     "\\Source",
-    "\\Source\\BinauralPlugin",
     "\\Source\\Common",
     "\\Source\\VBAPPlugin"
   ],
-  "SelectedNode": "\\Source\\Common\\VbapEngine2D.h",
+  "SelectedNode": "\\Source\\BinauralPlugin",
   "PreviewInSolutionExplorer": false
 }
