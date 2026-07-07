@@ -70,8 +70,25 @@ bool AudioPluginAudioProcessor::isBusesLayoutSupported(const BusesLayout& layout
 
 juce::File AudioPluginAudioProcessor::getDefaultHrirFolder() const
 {
-    // Primary: look in Documents/BinauralPlugin/HRIR/48K_24bit_0ele
-    // (copy the HRIR folder there to run on any machine)
+    const juce::String hrirRelativePath = "Assets/0ele/48K_24bit_0ele";
+
+    // 1) Try next to executable/plugin
+    const auto appCandidate = juce::File::getSpecialLocation(
+        juce::File::currentApplicationFile)
+        .getParentDirectory()
+        .getChildFile(hrirRelativePath);
+
+    if (appCandidate.isDirectory())
+        return appCandidate;
+
+    // 2) Try from current working directory
+    const auto cwdCandidate = juce::File::getCurrentWorkingDirectory()
+        .getChildFile(hrirRelativePath);
+
+    if (cwdCandidate.isDirectory())
+        return cwdCandidate;
+
+    // 3) Optional fallback in Documents
     const auto docsCandidate = juce::File::getSpecialLocation(
         juce::File::userDocumentsDirectory)
         .getChildFile("BinauralPlugin")
@@ -81,9 +98,9 @@ juce::File AudioPluginAudioProcessor::getDefaultHrirFolder() const
     if (docsCandidate.isDirectory())
         return docsCandidate;
 
-    // Fallback: original developer path
-    return juce::File("C:/Users/nikos/Desktop/Diplomatiki/JucePlugins/Assets/0ele/48K_24bit_0ele");
+    return {};
 }
+
 
 float AudioPluginAudioProcessor::unwrapTargetAzimuthNearReference(float referenceDegrees,
     float targetDegrees) noexcept

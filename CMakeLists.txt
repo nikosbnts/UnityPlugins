@@ -10,40 +10,39 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # =========================================================
 # Output names for Unity DLLs
 # =========================================================
-set(VBAP_UNITY_OUTPUT_NAME "audioplugin_VBAP"
-    CACHE STRING "Output filename for the Unity VBAP plugin" FORCE)
-
-set(BINAURAL_UNITY_OUTPUT_NAME "audioplugin_Binaural"
-    CACHE STRING "Output filename for the Unity Binaural plugin" FORCE)
+set(VBAP_UNITY_OUTPUT_NAME "audioplugin_VBAP")
+set(BINAURAL_UNITY_OUTPUT_NAME "audioplugin_Binaural")
 
 # =========================================================
 # Copy destinations
+# Everything is copied inside the build folder.
 # =========================================================
-set(UNITY_PLUGIN_COPY_DIR "C:/Users/nikos/Desktop/Diplomatiki/VST-Test/Assets/Plugins"
-    CACHE PATH "Where to copy built Unity plugins when COPY_PLUGIN_AFTER_BUILD is TRUE")
+option(COPY_PLUGIN_AFTER_BUILD "Copy built plugins after build" ON)
 
-set(VST3_PLUGIN_COPY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/VST3"
-    CACHE PATH "Where to copy built VST3 plugins when COPY_PLUGIN_AFTER_BUILD is TRUE")
+set(UNITY_PLUGIN_COPY_DIR "${CMAKE_BINARY_DIR}/UnityPlugins")
+set(VST3_PLUGIN_COPY_DIR "${CMAKE_BINARY_DIR}/VST3")
 
 # =========================================================
 # CPM + JUCE
 # =========================================================
-set(CPM_DOWNLOAD_VERSION 0.34.0)
+set(CPM_DOWNLOAD_VERSION 0.42.3)
 set(CPM_DOWNLOAD_LOCATION "${CMAKE_BINARY_DIR}/cmake/CPM_${CPM_DOWNLOAD_VERSION}.cmake")
 
-if (NOT EXISTS ${CPM_DOWNLOAD_LOCATION})
+if (NOT EXISTS "${CPM_DOWNLOAD_LOCATION}")
     message(STATUS "Downloading CPM.cmake to ${CPM_DOWNLOAD_LOCATION}")
     file(DOWNLOAD
-        https://github.com/cpm-cmake/CPM.cmake/releases/download/v${CPM_DOWNLOAD_VERSION}/CPM.cmake
-        ${CPM_DOWNLOAD_LOCATION})
+        "https://github.com/cpm-cmake/CPM.cmake/releases/download/v${CPM_DOWNLOAD_VERSION}/CPM.cmake"
+        "${CPM_DOWNLOAD_LOCATION}"
+    )
 endif()
 
-include(${CPM_DOWNLOAD_LOCATION})
+include("${CPM_DOWNLOAD_LOCATION}")
 
 CPMAddPackage(
     NAME juce
     GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
-    GIT_TAG origin/master
+    GIT_TAG 8.0.14
+    GIT_SHALLOW TRUE
 )
 
 # =========================================================
@@ -82,15 +81,10 @@ set(BINAURAL_SOURCE_FILES
 )
 
 # =========================================================
-# Helper function — creates one JUCE plugin target.
-#   PLUGIN_NAME: name the plugin reports to hosts (DAW/Unity mixer).
-#                Independent of PRODUCT_NAME (which controls the output filename).
-#   EDITOR_MODE: integer passed to source code as BINAURAL_EDITOR_MODE
-#                (0 = test editor, 1 = parameter editor; only used by Binaural).
-#   BUILD_UNITY: TRUE to build VST3+Standalone+Unity, FALSE for Standalone only.
+# Helper function
 # =========================================================
 function(add_juce_unity_plugin TARGET_NAME PRODUCT_NAME PLUGIN_NAME UNITY_OUTPUT_NAME PLUGIN_CODE EDITOR_MODE BUILD_UNITY)
-    if (${BUILD_UNITY})
+    if (BUILD_UNITY)
         set(_formats VST3 Standalone Unity)
     else()
         set(_formats Standalone)
@@ -105,7 +99,7 @@ function(add_juce_unity_plugin TARGET_NAME PRODUCT_NAME PLUGIN_NAME UNITY_OUTPUT
         EDITOR_WANTS_KEYBOARD_FOCUS TRUE
         JUCE_VST3_CAN_REPLACE_VST2 FALSE
 
-        COPY_PLUGIN_AFTER_BUILD TRUE
+        COPY_PLUGIN_AFTER_BUILD ${COPY_PLUGIN_AFTER_BUILD}
         UNITY_COPY_DIR "${UNITY_PLUGIN_COPY_DIR}"
         VST3_COPY_DIR "${VST3_PLUGIN_COPY_DIR}"
 
@@ -114,22 +108,43 @@ function(add_juce_unity_plugin TARGET_NAME PRODUCT_NAME PLUGIN_NAME UNITY_OUTPUT
 
         FORMATS ${_formats}
         PRODUCT_NAME "${PRODUCT_NAME}"
-        PLUGIN_NAME  "${PLUGIN_NAME}"
+        PLUGIN_NAME "${PLUGIN_NAME}"
     )
 
     # Unity DLL filename
     if (TARGET ${TARGET_NAME}_Unity)
         set_target_properties(${TARGET_NAME}_Unity PROPERTIES
-            OUTPUT_NAME "${UNITY_OUTPUT_NAME}")
+            OUTPUT_NAME "${UNITY_OUTPUT_NAME}"
+        )
     endif()
 
-    # Extra explicit Unity copy
-    if (TARGET ${TARGET_NAME}_Unity)
+    # Copy Unity DLL into build/UnityPlugins
+    if (COPY_PLUGIN_AFTER_BUILD AND TARGET ${TARGET_NAME}_Unity)
         add_custom_command(TARGET ${TARGET_NAME}_Unity POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E make_directory "${UNITY_PLUGIN_COPY_DIR}"
-            COMMAND ${CMAKE_COMMAND} -E copy
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 "$<TARGET_FILE:${TARGET_NAME}_Unity>"
                 "${UNITY_PLUGIN_COPY_DIR}/$<TARGET_FILE_NAME:${TARGET_NAME}_Unity>"
+        )
+    endif()
+
+    # Copy Assets next to every Standalone executable.
+    # This lets Binaural.exe / BinauralTest.exe find HRIR files without hardcoded paths.
+    if (TARGET ${TARGET_NAME}_Standalone)
+        add_custom_command(TARGET ${TARGET_NAME}_Standalone POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${CMAKE_CURRENT_SOURCE_DIR}/Assets"
+                "$<TARGET_FILE_DIR:${TARGET_NAME}_Standalone>/Assets"
+        )
+    endif()
+
+    # Also copy Assets into build/UnityPlugins.
+    # Useful if you manually take the Unity DLLs from build/UnityPlugins.
+    if (COPY_PLUGIN_AFTER_BUILD AND TARGET ${TARGET_NAME}_Unity)
+        add_custom_command(TARGET ${TARGET_NAME}_Unity POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${CMAKE_CURRENT_SOURCE_DIR}/Assets"
+                "${UNITY_PLUGIN_COPY_DIR}/Assets"
         )
     endif()
 
@@ -168,55 +183,54 @@ function(add_juce_unity_plugin TARGET_NAME PRODUCT_NAME PLUGIN_NAME UNITY_OUTPUT
 endfunction()
 
 # =========================================================
-# VBAP plugin (Standalone + VST3 + Unity)
+# VBAP plugin
+# Standalone + VST3 + Unity
 # =========================================================
 add_juce_unity_plugin(
     VBAPPlugin
-    "VBAP"                          # PRODUCT_NAME (filename)
-    "VBAP"                          # PLUGIN_NAME (shown to hosts)
+    "VBAP"
+    "VBAP"
     "${VBAP_UNITY_OUTPUT_NAME}"
     Vb01
-    0       # EDITOR_MODE (unused for VBAP)
-    TRUE    # BUILD_UNITY
+    0
+    TRUE
     ${VBAP_SOURCE_FILES}
 )
 
 # =========================================================
-# Binaural plugin — test session editor.
-# Standalone is named BinauralTest.exe, but inside Unity / DAWs the plugin
-# still reports itself as "Binaural" so the existing mixer effect keeps working.
+# Binaural plugin — test session editor
+# Standalone + VST3 + Unity
 # =========================================================
 add_juce_unity_plugin(
     BinauralPlugin
-    "BinauralTest"                  # PRODUCT_NAME (standalone/vst3 filename)
-    "Binaural"                      # PLUGIN_NAME (host-facing identifier)
+    "BinauralTest"
+    "Binaural"
     "${BINAURAL_UNITY_OUTPUT_NAME}"
     Bi01
-    0       # EDITOR_MODE = test editor
-    TRUE    # BUILD_UNITY
+    0
+    TRUE
     ${BINAURAL_SOURCE_FILES}
 )
 
 # =========================================================
-# Binaural plugin — parameter editor.
-# Standalone only (Binaural.exe). Shares audio code with the test variant,
-# selects the parameter editor via BINAURAL_EDITOR_MODE=1.
+# Binaural plugin — parameter editor
+# Standalone only
 # =========================================================
 add_juce_unity_plugin(
     BinauralParamsPlugin
-    "Binaural"                      # PRODUCT_NAME
-    "Binaural"                      # PLUGIN_NAME
-    "audioplugin_Binaural_unused"   # Unity not built for this target
+    "Binaural"
+    "Binaural"
+    "audioplugin_Binaural_unused"
     Bi02
-    1       # EDITOR_MODE = parameter editor
-    FALSE   # BUILD_UNITY
+    1
+    FALSE
     ${BINAURAL_SOURCE_FILES}
 )
 
 # =========================================================
 # Nice folder grouping in IDEs
 # =========================================================
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES
     ${COMMON_SOURCE_FILES}
     ${VBAP_SOURCE_FILES}
     ${BINAURAL_SOURCE_FILES}

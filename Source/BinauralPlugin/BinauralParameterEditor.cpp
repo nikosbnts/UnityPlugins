@@ -330,17 +330,29 @@ void BinauralParameterEditor::paint(juce::Graphics& g)
                        getWidth() - 2 * kPad, "Topology");
 }
 
-void BinauralParameterEditor::paintSectionHeader(juce::Graphics& g, int x, int y, int w,
-                                                 const juce::String& text)
+void BinauralParameterEditor::paintSectionHeader(juce::Graphics& g,
+    int x,
+    int y,
+    int w,
+    const juce::String& text)
 {
+    const auto headerText = text.toUpperCase();
+
     g.setColour(juce::Colour(colHint));
-    g.setFont(juce::Font(juce::FontOptions(11.0f, juce::Font::bold)));
-    g.drawText(text.toUpperCase(), x, y, w, 14, juce::Justification::centredLeft);
+
+    const auto headerFont = juce::Font(juce::FontOptions(11.0f, juce::Font::bold));
+    g.setFont(headerFont);
+
+    g.drawText(headerText, x, y, w, 14, juce::Justification::centredLeft);
+
+    // Approximate width of the section title.
+    // Avoids JUCE-version-specific Font width APIs.
+    const float metrics = 12.0f + static_cast<float>(headerText.length()) * 7.5f;
 
     g.setColour(juce::Colour(colBorder));
-    const auto metrics = juce::Font(juce::FontOptions(11.0f, juce::Font::bold))
-        .getStringWidthFloat(text.toUpperCase()) + 12.0f;
-    g.drawHorizontalLine(y + 7, (float) (x + (int) metrics), (float) (x + w));
+    g.drawHorizontalLine(y + 7,
+        static_cast<float>(x) + metrics,
+        static_cast<float>(x + w));
 }
 
 juce::String BinauralParameterEditor::currentPresetName() const

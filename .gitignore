@@ -38,3 +38,14 @@ build/
 Builds/
 builds/
 cmake-build-debug
+
+.vs/
+build/
+Build/
+cmake-build-debug/
+CMakeCache.txt
+CMakeFiles/
+*.dll
+*.exe
+*.lib
+*.obj
