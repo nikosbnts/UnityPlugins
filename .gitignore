@@ -1,51 +1,142 @@
-# Prerequisites
-*.d
+# =========================================================
+# OS generated files
+# =========================================================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
+# =========================================================
+# Visual Studio / Visual Studio Insiders
+# =========================================================
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio database / cache
+*.VC.db
+*.VC.opendb
+Browse.VC.db
+ipch/
+
+# =========================================================
+# CMake generated files / folders
+# =========================================================
+build/
+Build/
+out/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+CPackConfig.cmake
+CPackSourceConfig.cmake
+Makefile
+
+# CMake generated Visual Studio solution/projects
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# =========================================================
+# CPM / FetchContent / downloaded dependencies
+# Usually created inside build/
+# =========================================================
+_deps/
+_cpm/
+CPM_*.cmake
+
+# =========================================================
+# Build intermediate files
+# =========================================================
 *.obj
+*.o
+*.lo
+*.la
+*.idb
+*.pdb
+*.ilk
+*.ipdb
+*.iobj
+*.tlog
+*.lastbuildstate
+*.recipe
+*.log
 
-# Precompiled Headers
-*.gch
-*.pch
+# =========================================================
+# Static / import libraries
+# =========================================================
+*.lib
+*.a
+*.exp
 
-# Compiled Dynamic libraries
+# =========================================================
+# Executables / dynamic libraries
+# =========================================================
+*.exe
+*.dll
 *.so
 *.dylib
-*.dll
 
-# Fortran module files
-*.mod
-*.smod
+# =========================================================
+# JUCE / Plugin build outputs
+# =========================================================
+VST3/
+UnityPlugins/
+Standalone/
 
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
+*.vst3/
+*.component/
+*.aaxplugin/
+*.app/
 
-# Executables
-*.exe
-*.out
-*.app
+# Unity native audio plugin binaries
+audioplugin_*.dll
+audioplugin_*.bundle
+audioplugin_*.so
 
-.DS_Store
+# =========================================================
+# JUCE generated helper targets / artefacts
+# =========================================================
+*_artefacts/
+*_rc_lib/
+*_vst3_helper/
+
+# =========================================================
+# Unity generated folders
+# Only relevant if a Unity project is ever placed inside this repo
+# =========================================================
+Library/
+Temp/
+Obj/
+Logs/
+UserSettings/
+MemoryCaptures/
+Recordings/
+
+# Unity cache/build output
+[Bb]uild/
+[Bb]uilds/
+
+# =========================================================
+# IDE folders
+# =========================================================
 .idea/
-Build/
-build/
-Builds/
-builds/
-cmake-build-debug
+.vscode/
 
-.vs/
-build/
-Build/
-cmake-build-debug/
-CMakeCache.txt
-CMakeFiles/
-*.dll
-*.exe
-*.lib
-*.obj
+# Optional: ignore local VS Code workspace files
+*.code-workspace
+
+# =========================================================
+# Temporary / backup files
+# =========================================================
+*.tmp
+*.temp
+*.bak
+*.swp
+*.orig
+*~
